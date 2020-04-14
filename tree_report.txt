@@ -1,0 +1,122 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 5 files
+Detected 7 issues that require attention
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+File: src/CDAE.py
+--------------------------------------------------------------------------------
+src/CDAE.py:111:12: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+--------------------------------------------------------------------------------
+File: src/DAE.py
+--------------------------------------------------------------------------------
+src/DAE.py:19:20: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+src/DAE.py:21:20: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+src/DAE.py:43:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+src/DAE.py:44:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+src/DAE.py:47:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+src/DAE.py:48:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+================================================================================
+Detailed log follows:
+
+================================================================================
+================================================================================
+Input tree: 'src/'
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'src/CDAE.py'
+ outputting to 'src_v2/CDAE.py'
+--------------------------------------------------------------------------------
+
+89:15: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+101:37: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+102:23: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+103:28: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+104:36: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+105:34: INFO: Added keywords to args of function 'tf.shape'
+111:12: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+111:12: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+111:50: INFO: Renamed 'tf.truncated_normal' to 'tf.random.truncated_normal'
+117:50: INFO: Renamed 'tf.log' to 'tf.math.log'
+117:104: INFO: Renamed 'tf.log' to 'tf.math.log'
+119:16: INFO: Added keywords to args of function 'tf.reduce_sum'
+131:24: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+133:24: INFO: Renamed 'tf.train.AdadeltaOptimizer' to 'tf.compat.v1.train.AdadeltaOptimizer'
+135:24: INFO: Renamed 'tf.train.AdadeltaOptimizer' to 'tf.compat.v1.train.AdadeltaOptimizer'
+137:24: INFO: Renamed 'tf.train.RMSPropOptimizer' to 'tf.compat.v1.train.RMSPropOptimizer'
+139:24: INFO: Renamed 'tf.train.GradientDescentOptimizer' to 'tf.compat.v1.train.GradientDescentOptimizer'
+141:24: INFO: Renamed 'tf.train.MomentumOptimizer' to 'tf.compat.v1.train.MomentumOptimizer'
+219:23: INFO: Added keywords to args of function 'tf.reduce_sum'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'src/DAE.py'
+ outputting to 'src_v2/DAE.py'
+--------------------------------------------------------------------------------
+
+18:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+19:20: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+19:20: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+19:78: INFO: Renamed 'tf.truncated_normal' to 'tf.random.truncated_normal'
+21:20: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+21:20: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+43:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+43:17: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+43:132: INFO: tf.random_normal_initializer requires manual check. Initializers no longer have the dtype argument in the constructor or partition_info argument in the __call__ method.
+The calls have been converted to compat.v1 for safety (even though they may already have been correct).
+43:132: INFO: Renamed 'tf.random_normal_initializer' to 'tf.compat.v1.random_normal_initializer'
+44:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+44:17: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+45:45: INFO: tf.random_normal_initializer requires manual check. Initializers no longer have the dtype argument in the constructor or partition_info argument in the __call__ method.
+The calls have been converted to compat.v1 for safety (even though they may already have been correct).
+45:45: INFO: Renamed 'tf.random_normal_initializer' to 'tf.compat.v1.random_normal_initializer'
+47:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+47:17: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+47:132: INFO: tf.random_normal_initializer requires manual check. Initializers no longer have the dtype argument in the constructor or partition_info argument in the __call__ method.
+The calls have been converted to compat.v1 for safety (even though they may already have been correct).
+47:132: INFO: Renamed 'tf.random_normal_initializer' to 'tf.compat.v1.random_normal_initializer'
+48:17: WARNING: tf.get_variable requires manual check. tf.get_variable returns ResourceVariables by default in 2.0, which have well-defined semantics and are stricter about shapes. You can disable this behavior by passing use_resource=False, or by calling tf.compat.v1.disable_resource_variables().
+48:17: INFO: Renamed 'tf.get_variable' to 'tf.compat.v1.get_variable'
+49:45: INFO: tf.random_normal_initializer requires manual check. Initializers no longer have the dtype argument in the constructor or partition_info argument in the __call__ method.
+The calls have been converted to compat.v1 for safety (even though they may already have been correct).
+49:45: INFO: Renamed 'tf.random_normal_initializer' to 'tf.compat.v1.random_normal_initializer'
+51:12: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+52:15: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+68:20: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+69:17: INFO: Changing keep_prob arg of tf.nn.dropout to rate, and recomputing value.
+
+81:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+82:20: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+86:15: INFO: Renamed 'tf.initialize_all_variables' to 'tf.compat.v1.initialize_all_variables'
+87:13: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+110:29: INFO: Added keywords to args of function 'tf.convert_to_tensor'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'src/utils.py'
+ outputting to 'src_v2/utils.py'
+--------------------------------------------------------------------------------
+
+198:27: INFO: Changing keep_prob arg of tf.nn.dropout to rate, and recomputing value.
+
+207:19: INFO: Added keywords to args of function 'tf.reduce_sum'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'src/main.py'
+ outputting to 'src_v2/main.py'
+--------------------------------------------------------------------------------
+
+37:0: INFO: Renamed 'tf.reset_default_graph' to 'tf.compat.v1.reset_default_graph'
+40:0: INFO: Renamed 'tf.set_random_seed' to 'tf.compat.v1.set_random_seed'
+122:5: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'src/data_preprocessor.py'
+ outputting to 'src_v2/data_preprocessor.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
