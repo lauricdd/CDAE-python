@@ -19,11 +19,6 @@ class DAE():
             pre_W = tf.compat.v1.get_variable(name=("pre_W"+str(self.itr)), initializer=tf.random.truncated_normal(shape=[self.n_visible, self.n_hidden],
                                                                       mean=0, stddev=tf.truediv(1.0,self.lambda_w)), dtype=tf.float32)
             pre_b = tf.compat.v1.get_variable(name=("pre_b"+str(self.itr)), initializer=tf.zeros(shape=self.n_hidden), dtype=tf.float32)
-            '''
-            pre_W = tf.get_variable(name=("pre_W"+str(self.itr)), shape=[self.n_visible, self.n_hidden], dtype=tf.float32,initializer=tf.random_normal_initializer())
-            pre_b = tf.get_variable(name=("pre_b"+str(self.itr)), shape=[self.n_hidden], dtype=tf.float32,
-                                     initializer=tf.random_normal_initializer())
-         '''
         return pre_W , pre_b
 
     def do_pretrain(self,pretrain_input,epoch,batch_size,learning_rate,dropout,corruption_level):
@@ -65,8 +60,10 @@ class DAE():
         elif self.dipen_activation == "elu":
             hidden = tf.nn.elu(tf.add(tf.matmul(corrupted_X, pre_W1), pre_b1))
 
-        keep_prob = tf.compat.v1.placeholder(tf.float32)
-        hidden = tf.nn.dropout(hidden,1 - (dropout)) # probability to keep units
+        keep_prob = tf.compat.v1.placeholder(tf.float32) # keep_prob
+        hidden = tf.nn.dropout(hidden, rate=1 - (dropout)) # probability to keep units
+
+        # tf.nn.dropout(x, rate = 0.5, seed = 1)
 
         if self.dipen_activation == "sigmoid":
             output = tf.nn.sigmoid(tf.add(tf.matmul(hidden, pre_W2), pre_b2))
@@ -103,6 +100,7 @@ class DAE():
                     batch_mask_np = mask_np[batch_set_idx, :]
                     _, c = sess.run([optimizer, cost], feed_dict={X: batch_xs , keep_prob:dropout , mask:batch_mask_np})
                     cost_list.append(c)
+
                 # Display logs per epoch step
                 if epoch % self.display_step == 0:
                     final_cost = np.sum(cost_list)

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import time
 import numpy as np
-from utils import evaluation,make_records,SDAE_calculate
+from utils.utils import *
 from numpy import inf
 
 class CDAE():
@@ -85,18 +85,24 @@ class CDAE():
         self.total_patience = 20
 
     def run(self):
+        
         self.prepare_model()
         init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
+
         for epoch_itr in range(self.train_epoch):
+            
+            # early stopping
             if self.earlystop_switch:
                 break
             else:
                 self.train_model(epoch_itr)
                 self.test_model(epoch_itr)
+        
         make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,self.current_time,
                      self.args,self.model_name,self.data_name,self.train_ratio,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
 
+    
     def prepare_model(self):
         self.model_mask_corruption = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_items])
         self.input_R = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_items], name="input_R")
@@ -168,7 +174,6 @@ class CDAE():
 
             batch_cost = batch_cost + Cost
         self.train_cost_list.append(batch_cost)
-
         if itr % self.display_step == 0:
             print ("Training //", "Epoch %d //" % (itr), " Total cost = {:.2f}".format(batch_cost),
                    "Elapsed time : %d sec" % (time.time() - start_time))
@@ -199,6 +204,7 @@ class CDAE():
                   "AVG Loglike = {:.4f}".format(AVG_loglikelihood))
             print("=" * 100)
 
+        # Check min_RMSE, patience, total_patiencep
         if RMSE <= self.min_RMSE:
             self.min_RMSE = RMSE
             self.min_epoch = itr
@@ -206,6 +212,7 @@ class CDAE():
         else:
             self.patience = self.patience + 1
 
+        # Early stopping
         if (itr > 100) and (self.patience >= self.total_patience):
             self.test_rmse_list.append(self.test_rmse_list[self.min_epoch])
             self.test_mae_list.append(self.test_mae_list[self.min_epoch])

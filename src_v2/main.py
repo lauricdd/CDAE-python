@@ -1,4 +1,4 @@
-from data_preprocessor import *
+from utils.data_preprocessor import *
 from CDAE import CDAE
 from DAE import DAE
 import tensorflow as tf
@@ -7,28 +7,68 @@ import argparse
 
 current_time = time.time()
 
+
+''' ==============================================================
+                        Experiment setup
+============================================================== '''
+
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
 parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
-parser.add_argument('--data_name', choices=['politic_old','politic_new'], default='politic_new')
-parser.add_argument('--test_fold', type=int, default=1)
 parser.add_argument('--random_seed', type=int, default=1000)
-parser.add_argument('--train_epoch', type=int, default=2)
+
+# dataset name
+parser.add_argument('--data_name', choices=['politic_old','politic_new', 'movielens'], default='movielens')
+
+# train/test fold for training
+parser.add_argument('--test_fold', type=int, default=4)
+
+# training epochs
+parser.add_argument('--train_epoch', type=int, default=100)
 parser.add_argument('--display_step', type=int, default=1)
-parser.add_argument('--lr', type=float, default=1e-3)
-parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','RMSProp','GradientDescent','Momentum'],default='Adam')
-parser.add_argument('--keep_prob', type=float, default=1.0)
-parser.add_argument('--a', type=float, default=1)
-parser.add_argument('--b', type=float, default=0)
-parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')  # True
+
+# learning rate
+parser.add_argument('--lr', type=float, default=1e-3) 
+
+# gradient-based optimization algorithms
+parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','RMSProp', \
+                    'GradientDescent','Momentum'],default='Adam')
+
+
+# In tensorflow 2.0
+# ValueError: rate must be a scalar tensor or a float in the range [0, 1), got 1
+# 1.0 / (1 - rate) 
+
+# used to control the dropout rate when training 
+# parser.add_argument('--keep_prob', type=float, default=1.0) # tf 1.0
+######Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`. 
+parser.add_argument('--keep_prob', type=float, default=0.5)
+
+# gradient clipping: prevent exploding gradients
+parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')
+
+# normalize activations of the previous layer at each batch
 parser.add_argument('--batch_normalization', choices=['True','False'], default = 'False')
 
+# number of latent dimensions (K) 
 parser.add_argument('--hidden_neuron', type=int, default=50)
+
+# input corruption 
 parser.add_argument('--corruption_level', type=float, default=0.3)
+
+# regularization rate
 parser.add_argument('--lambda_value', type=float, default=0.001)
 
+# activation functions
 parser.add_argument('--f_act', choices=['Sigmoid','Relu','Elu','Tanh',"Identity"], default = 'Sigmoid')
 parser.add_argument('--g_act', choices=['Sigmoid','Relu','Elu','Tanh',"Identity"], default = 'Sigmoid')
 
+# for reading ratings ???
+parser.add_argument('--a', type=float, default=1)
+parser.add_argument('--b', type=float, default=0)
+
+# Autoencoder types:
+'''SDAE: Stacked Denoising Autoencoder
+VAE: Variational Autoencoder '''
 parser.add_argument('--encoder_method', choices=['SDAE','VAE'],default='SDAE')
 
 args = parser.parse_args()
@@ -36,27 +76,53 @@ args = parser.parse_args()
 random_seed = args.random_seed
 tf.compat.v1.reset_default_graph()
 np.random.seed(random_seed)
-# np.random.RandomState
 tf.compat.v1.set_random_seed(random_seed)
 
+
+''' ==============================================================
+                        Data attributes
+============================================================== '''
+
 model_name = args.model_name
+
+# Data directory
 data_name = args.data_name
-data_base_dir = "../data/cv/"
+data_base_dir = "../data/"
 path = data_base_dir + "%s" % data_name + "/"
 
-if data_name == 'politic_new':
-    num_users = 1537
+''' Attributes of Politic2013 and Politic2016 datasets
+Num of legislators (|U|) = num_users
+Num of bills (|D|) = num_items
+Num of votings (|D|) = num_total_ratings
+Num of unique word (|V|) = num_voca '''
+
+if data_name == 'politic_new': # Politic2016
+    print("politic_new")
+    num_users = 1537 
     num_items = 7975
     num_total_ratings = 2999844
     num_voca = 13581
-elif data_name == 'politic_old':
+
+elif data_name == 'politic_old': # Politic2013
+    print("politic_old")
     num_users = 1540
     num_items = 7162
     num_total_ratings = 2779703
     num_voca = 10000
+elif data_name == 'movielens':
+    print("movielens")
+    # user_list, item_list, rating_list, timestamp_list = data.parse_data("ml-10M100K/ratings.dat")
+
+
 else:
     raise NotImplementedError("ERROR")
 
+exit(-1)
+
+''' ==============================================================
+                        Training config
+============================================================== '''
+ 
 a = args.a
 b = args.b
 
@@ -71,7 +137,9 @@ lr = args.lr
 train_epoch = args.train_epoch
 optimizer_method = args.optimizer_method
 display_step = args.display_step
-decay_epoch_step = 10000
+
+# learning rate schedules: adapt lr based on number of epochs
+decay_epoch_step = 10000 
 decay_rate = 0.96
 grad_clip = args.grad_clip
 
@@ -101,14 +169,21 @@ elif args.g_act == "Elu":
 else:
     raise NotImplementedError("ERROR")
 
+
 date = "0203"
 result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold) +  '/' + str(current_time)+"/"
 
-R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,\
+# read ratings file and train/test split
+R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings,\
 user_train_set,item_train_set,user_test_set,item_test_set \
-    = read_rating(path, data_name,num_users, num_items,num_total_ratings, a, b, test_fold,random_seed)
+    = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
 
 X_dw = read_bill_term(path,data_name,num_items,num_voca)
+
+
+''' ==============================================================
+                        Model config
+============================================================== '''
 
 print ("Type of Model : %s" %model_name)
 print ("Type of Data : %s" %data_name)
@@ -127,11 +202,19 @@ with tf.compat.v1.Session() as sess:
         #layer_structure = [num_items, hidden_neuron, num_items]
         layer_structure = [num_items, 512, 128, hidden_neuron, 128, 512, num_items]
         n_layer = len(layer_structure)
+
         pre_W = dict()
         pre_b = dict()
+        
         for itr in range(n_layer - 1):
             initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, num_voca, itr, "sigmoid")
+            
+            # get initial weights using do_not_pretrain
             pre_W[itr], pre_b[itr] = initial_DAE.do_not_pretrain()
+
+            # get initial weights using do_pretrain
+            # do_pretrain(self,pretrain_input,epoch,batch_size,learning_rate,dropout,corruption_level):
+            # pre_W1 , pre_b1 , next_pretrain_input
 
         model = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,
@@ -143,6 +226,7 @@ with tf.compat.v1.Session() as sess:
     else:
         raise NotImplementedError("ERROR")
 
+    # train and test the model
     model.run()
 
 
