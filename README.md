@@ -19,9 +19,9 @@
    1990~2016 legislative rollcall dataset (from Govtrack.com)
 
 You can download **politic_old** from [https://github.com/gtshs2/NIPEN/tree/master/data/politic_old](https://github.com/gtshs2/NIPEN/tree/master/data/politic_old)
+
 You can download **politic_new** from [https://github.com/gtshs2/NIPEN/tree/master/data/politic_new](https://github.com/gtshs2/NIPEN/tree/master/data/politic_new)
 
-======================================================
 ## Setup
 
 Check python version (Python 3.7.3)
