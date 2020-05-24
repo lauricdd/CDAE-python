@@ -3,9 +3,9 @@ import numpy as np
 import time
 
 class DAE():
-    def __init__(self,n_visible,n_hidden,num_item,num_voca,itr,dipen_activation,lambda_w=33.33333):
+    def __init__(self,n_visible,n_hidden,num_item,itr,dipen_activation,lambda_w=33.33333):
+
         self.num_item = num_item
-        self.num_voca = num_voca
         self.itr = itr
         self.n_visible = n_visible
         self.n_hidden = n_hidden

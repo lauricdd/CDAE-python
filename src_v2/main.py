@@ -1,9 +1,15 @@
 from utils.data_preprocessor import *
+from utils.data_manager import *
 from CDAE import CDAE
 from DAE import DAE
 import tensorflow as tf
 import time
 import argparse
+
+
+# Ignore warning TODO: check warnings
+import warnings
+warnings.filterwarnings('ignore')
 
 current_time = time.time()
 
@@ -17,10 +23,10 @@ parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new', 'movielens'], default='movielens')
+parser.add_argument('--data_name', choices=['politic_old','politic_new'], default='politic_old')
 
 # train/test fold for training
-parser.add_argument('--test_fold', type=int, default=4)
+parser.add_argument('--test_fold', type=int, default=0)
 
 # training epochs
 parser.add_argument('--train_epoch', type=int, default=100)
@@ -41,7 +47,7 @@ parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','
 # used to control the dropout rate when training 
 # parser.add_argument('--keep_prob', type=float, default=1.0) # tf 1.0
 ######Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`. 
-parser.add_argument('--keep_prob', type=float, default=0.5)
+parser.add_argument('--keep_prob', type=float, default=0.3)
 
 # gradient clipping: prevent exploding gradients
 parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')
@@ -93,31 +99,21 @@ path = data_base_dir + "%s" % data_name + "/"
 ''' Attributes of Politic2013 and Politic2016 datasets
 Num of legislators (|U|) = num_users
 Num of bills (|D|) = num_items
-Num of votings (|D|) = num_total_ratings
-Num of unique word (|V|) = num_voca '''
+Num of votings (|D|) = num_total_ratings'''
 
 if data_name == 'politic_new': # Politic2016
-    print("politic_new")
+    print("politic_new dataset ...")
     num_users = 1537 
     num_items = 7975
     num_total_ratings = 2999844
-    num_voca = 13581
 
 elif data_name == 'politic_old': # Politic2013
-    print("politic_old")
+    print("politic_old dataset ...")
     num_users = 1540
     num_items = 7162
     num_total_ratings = 2779703
-    num_voca = 10000
-elif data_name == 'movielens':
-    print("movielens")
-    # user_list, item_list, rating_list, timestamp_list = data.parse_data("ml-10M100K/ratings.dat")
-
-
 else:
     raise NotImplementedError("ERROR")
-
-exit(-1)
 
 ''' ==============================================================
                         Training config
@@ -178,7 +174,7 @@ R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num
 user_train_set,item_train_set,user_test_set,item_test_set \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
 
-X_dw = read_bill_term(path,data_name,num_items,num_voca)
+# X_dw = read_bill_term(path,data_name,num_items,num_voca)
 
 
 ''' ==============================================================
@@ -207,14 +203,13 @@ with tf.compat.v1.Session() as sess:
         pre_b = dict()
         
         for itr in range(n_layer - 1):
-            initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, num_voca, itr, "sigmoid")
+            initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, itr, "sigmoid")
+            # initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, num_voca, itr, "sigmoid")
             
             # get initial weights using do_not_pretrain
             pre_W[itr], pre_b[itr] = initial_DAE.do_not_pretrain()
 
             # get initial weights using do_pretrain
-            # do_pretrain(self,pretrain_input,epoch,batch_size,learning_rate,dropout,corruption_level):
-            # pre_W1 , pre_b1 , next_pretrain_input
 
         model = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,
