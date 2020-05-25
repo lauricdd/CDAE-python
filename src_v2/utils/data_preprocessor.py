@@ -93,16 +93,16 @@ def read_trust(path,data_name, num_users):
     return T
 
 
-def read_bill_term(path,data_name,num_items,num_voca):
-    file = path + 'Bill_Term'
-    X_dw = np.zeros((num_items,num_voca))
-    with open(file,'r') as f:
-        contents = f.readlines()
-        for line in contents:
-            elements = line.split('\t')
-            d = int(elements[0])
-            w = int(elements[1])
-            frequency = int(elements[2])
-            X_dw[d,w] = frequency
-    return X_dw
+# def read_bill_term(path,data_name,num_items,num_voca):
+#     file = path + 'Bill_Term'
+#     X_dw = np.zeros((num_items,num_voca))
+#     with open(file,'r') as f:
+#         contents = f.readlines()
+#         for line in contents:
+#             elements = line.split('\t')
+#             d = int(elements[0])
+#             w = int(elements[1])
+#             frequency = int(elements[2])
+#             X_dw[d,w] = frequency
+#     return X_dw
 

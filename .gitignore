@@ -18,7 +18,13 @@ env/
 # Jetbrains
 .idea/
 
-# Ignore folders
+# MacOS
+.DS_Store
+
+# Ignore directories
 data/
 results/
+
+# Ignore tf v2.0 upgrade log
+app.log
 

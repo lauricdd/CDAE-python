@@ -46,7 +46,7 @@ Install dependencies (using requirements file)
     
 Run main file
 
-    python3/main.py     
+    python3 main.py     
  
  To leave the virtualenv
    

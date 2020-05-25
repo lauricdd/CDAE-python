@@ -23,7 +23,7 @@ parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new'], default='politic_old')
+parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='movielens_10m')
 
 # train/test fold for training
 parser.add_argument('--test_fold', type=int, default=0)
@@ -96,24 +96,56 @@ data_name = args.data_name
 data_base_dir = "../data/"
 path = data_base_dir + "%s" % data_name + "/"
 
-''' Attributes of Politic2013 and Politic2016 datasets
+''' 
+Attributes of Politic2013 and Politic2016 datasets
 Num of legislators (|U|) = num_users
 Num of bills (|D|) = num_items
-Num of votings (|D|) = num_total_ratings'''
+Num of votings (|D|) = num_total_ratings
+'''
+
+print("Loading", data_name, "data ... ", end="\n")
 
 if data_name == 'politic_new': # Politic2016
-    print("politic_new dataset ...")
     num_users = 1537 
     num_items = 7975
     num_total_ratings = 2999844
 
 elif data_name == 'politic_old': # Politic2013
-    print("politic_old dataset ...")
     num_users = 1540
     num_items = 7162
     num_total_ratings = 2779703
+
+elif data_name == 'movielens_10m': 
+    ratings_df = movielens_load_data(data_name)
+
+    num_users = ratings_df["user_id"].nunique() # count distinct values
+    num_items = ratings_df["movie_id"].nunique() 
+    num_total_ratings =  ratings_df.shape[0]
+
+    print("num_users", num_users)
+    print("num_items", num_items)
+    print("num_total_ratings", num_total_ratings)
+
+    print(ratings_df)
+
 else:
     raise NotImplementedError("ERROR")
+
+exit(-1)
+
+# from sklearn.model_selection import KFold 
+# kf = KFold(n_splits=5, random_state=1000, shuffle=True) # random seed when shuffle=True
+# kf.get_n_splits(ratings)
+
+# print(kf)
+
+# for train_index, test_index in kf.split(ratings):
+#     print("TRAIN:", train_index, "TEST:", test_index)
+#     # ratings_train, ratings_test = ratings[train_index], ratings[test_index]
+#     # traing ra
+
+
+
 
 ''' ==============================================================
                         Training config
