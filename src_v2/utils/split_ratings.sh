@@ -18,7 +18,7 @@ DATA_DIR=$1
 RATINGS_COUNT=`wc -l $DATA_PATH | xargs | cut -d ' ' -f 1`
 echo "ratings count: $RATINGS_COUNT"
 SET_SIZE=`expr $RATINGS_COUNT / 5`
-echo "set size: $SET_SIZE"
+echo "test set size: $SET_SIZE"
 REMAINDER=`expr $RATINGS_COUNT % 5`
 echo "remainder: $REMAINDER"
 
@@ -37,8 +37,8 @@ for i in 1 2 3 4 5
        tail -$REMAINDER $DATA_PATH >> $DATA_DIR/Train_ratings_fold_$i
     fi
 
-   echo "Test_ratings_fold_$i created. `wc -l r$i.test | xargs | cut -d " " -f 1` lines."
-   echo "Train_ratings_fold_$i created. `wc -l r$i.train | xargs | cut -d " " -f 1` lines."
+   echo "Test_ratings_fold_$i created. `wc -l Test_ratings_fold_$i | xargs | cut -d " " -f 1` lines."
+   echo "Train_ratings_fold_$i created. `wc -l Train_ratings_fold_$i | xargs | cut -d " " -f 1` lines."
 done
 
 
