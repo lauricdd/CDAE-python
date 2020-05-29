@@ -20,7 +20,7 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
     train_mask_R = np.zeros((num_users, num_items))
     test_mask_R = np.zeros((num_users, num_items))
 
-    if (data_name == 'politic_new') or (data_name == 'politic_old'):
+    if (data_name == 'politic_new') or (data_name == 'politic_old') or (data_name == 'movielens_10m'):
 
         num_train_ratings = 0
         num_test_ratings = 0

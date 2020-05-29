@@ -26,7 +26,9 @@ parser.add_argument('--random_seed', type=int, default=1000)
 parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='movielens_10m')
 
 # train/test fold for training
-parser.add_argument('--test_fold', type=int, default=0)
+# TODO: iterate all folds at once 
+parser.add_argument('--test_fold', type=int, default=1)
+# for politic_old and politic_new: 0,1,2,3,4. In the case of movielenes 1,2,3,4,5
 
 # training epochs
 parser.add_argument('--train_epoch', type=int, default=100)
@@ -89,6 +91,7 @@ tf.compat.v1.set_random_seed(random_seed)
                         Data attributes
 ============================================================== '''
 
+
 model_name = args.model_name
 
 # Data directory
@@ -105,6 +108,10 @@ Num of votings (|D|) = num_total_ratings
 
 print("Loading", data_name, "data ... ", end="\n")
 
+# politic_new and politic_old 
+# User IDs are in ranges from 1 to 1537-1
+# and Bill IDs
+
 if data_name == 'politic_new': # Politic2016
     num_users = 1537 
     num_items = 7975
@@ -115,23 +122,30 @@ elif data_name == 'politic_old': # Politic2013
     num_items = 7162
     num_total_ratings = 2779703
 
+    df2 = pd.read_csv("../data/politic_old/Test_ratings_fold_0" ,sep = "\t")
+
+    print("df2\n", df2.count())
+    # num_users = df2[2].nunique()
+    # num_total_ratings =  df2.shape[0]
+
+    # print("num_users", num_users)
+    # print("num_total_ratings", num_total_ratings)
+
 elif data_name == 'movielens_10m': 
-    ratings_df = movielens_load_data(data_name)
+    
+    data_path = "../data/movielens_10m/"
+   
+    if not os.path.isdir(data_path): # run just once
+        ratings_df = movielens_10m_prepare_data(data_name)
+    else: 
+        ratings_df = load_movielens_10m_data()
 
-    num_users = ratings_df["user_id"].nunique() # count distinct values
-    num_items = ratings_df["movie_id"].nunique() 
-    num_total_ratings =  ratings_df.shape[0]
-
-    print("num_users", num_users)
-    print("num_items", num_items)
-    print("num_total_ratings", num_total_ratings)
-
-    print(ratings_df)
+    # Data exploration (summary statitics) 
+    num_users, num_items, num_total_ratings = movielens_10m_statistics(ratings_df)
 
 else:
     raise NotImplementedError("ERROR")
 
-exit(-1)
 
 # from sklearn.model_selection import KFold 
 # kf = KFold(n_splits=5, random_state=1000, shuffle=True) # random seed when shuffle=True
@@ -143,8 +157,6 @@ exit(-1)
 #     print("TRAIN:", train_index, "TEST:", test_index)
 #     # ratings_train, ratings_test = ratings[train_index], ratings[test_index]
 #     # traing ra
-
-
 
 
 ''' ==============================================================
@@ -223,6 +235,7 @@ print ("Hidden neuron : %d" %hidden_neuron)
 
 
 with tf.compat.v1.Session() as sess:
+   
     if model_name == "CDAE":
         lambda_value = args.lambda_value
         corruption_level = args.corruption_level
@@ -236,8 +249,7 @@ with tf.compat.v1.Session() as sess:
         
         for itr in range(n_layer - 1):
             initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, itr, "sigmoid")
-            # initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, num_voca, itr, "sigmoid")
-            
+
             # get initial weights using do_not_pretrain
             pre_W[itr], pre_b[itr] = initial_DAE.do_not_pretrain()
 
@@ -255,5 +267,3 @@ with tf.compat.v1.Session() as sess:
 
     # train and test the model
     model.run()
-
-

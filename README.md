@@ -28,6 +28,10 @@ Check python version (Python 3.7.3)
 
     python3 --version 
       
+Open source code tensorflow v2.0
+
+    cd src_v2
+    
 Create virtual environment (env)
 
     python3 -m venv env  
@@ -35,10 +39,6 @@ Create virtual environment (env)
 Activate virtualenv
 
 	source env/bin/activate
-
-Open source code tensorflow v2.0
-
-    cd src_v2
     
 Install dependencies (using requirements file)
 
