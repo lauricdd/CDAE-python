@@ -68,7 +68,7 @@ def movielens_10m_prepare_data(dataset):
 
 
     ####################################################################################################
-    
+    # https://botbark.com/2019/12/28/scaling-data-range-using-min-max-scaler/
     # Scale features to a range using MinMaxScaler
     # Transform features by scaling each feature to a given range
     # This range can be set by specifying the feature_range parameter (default at (0,1)).
@@ -116,13 +116,6 @@ def convert_ratings_into_implicit(ratings_df):
     return ratings_df
 
 
-def unique_values(column):
-    ''' count distinct values of a dataframe column'''
-    count = column.nunique() 
-    
-    return count
-
-
 def k_fold_splitting(data_dir, data_file):
     ''' execute k-fold cross-validation subset generation script '''
 
@@ -136,14 +129,6 @@ def k_fold_splitting(data_dir, data_file):
         data_dir[:-1], # param 1 
         data_file # param 2
     ])
-
-
-def load_movielens_10m_data():
-    '''load implicit MovieLens dataset in a pandas dataframe '''
-    ratings_df = pd.read_csv("../data/movielens_10m/ratings_implicit.txt", delimiter="\t", header=None,
-            names=['user_id', 'movie_id', 'rating'])
-
-    return ratings_df
 
 
 def rescale_ids(ratings_df):
@@ -218,6 +203,23 @@ def test_rescaling(final_ratings_df):
 
     min_max = final_ratings_df.describe().loc[['min','max']].astype(int)
     print("\n ratings_df min and max values AFTER RESCALING... \n", min_max)
+
+
+
+
+def unique_values(column):
+    ''' count distinct values of a dataframe column'''
+    count = column.nunique() 
+    
+    return count
+
+    
+def load_movielens_10m_data():
+    '''load implicit MovieLens dataset in a pandas dataframe '''
+    ratings_df = pd.read_csv("../data/movielens_10m/ratings_implicit.txt", delimiter="\t", header=None,
+            names=['user_id', 'movie_id', 'rating'])
+
+    return ratings_df
 
 
 def movielens_10m_statistics(ratings_df):
