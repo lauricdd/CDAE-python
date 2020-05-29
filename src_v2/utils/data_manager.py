@@ -67,7 +67,8 @@ def movielens_10m_prepare_data(dataset):
         k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
 
 
-    ##############################################################################################################
+    ####################################################################################################
+    
     # Scale features to a range using MinMaxScaler
     # Transform features by scaling each feature to a given range
     # This range can be set by specifying the feature_range parameter (default at (0,1)).
@@ -77,10 +78,10 @@ def movielens_10m_prepare_data(dataset):
 
     # print("\nafter scaling ...\n")
     # print(ratings_df[100:])
-    # min_max = ratings_df.describe().loc[['min','max']]#.astype(int)
+    # min_max = ratings_df.describe().loc[['min','max']]
     # print("min_max values after scaling... \n", min_max)
 
-    #######################################################################################
+    ####################################################################################################
 
     return ratings_df    
 
@@ -172,8 +173,8 @@ def gen_new_user_id(ratings_df):
     # create NEW_user_id column with values which increments by one 
     # for every change in value of user_id column. 
     i = ratings_df.user_id  
-    ratings_df['NEW_user_id'] = i.ne(i.shift()).cumsum()
-    
+    ratings_df['NEW_user_id'] = i.ne(i.shift()).cumsum()-1 # start ID from 0
+
     return ratings_df
 
 
@@ -193,7 +194,7 @@ def gen_new_movie_id(ratings_df):
     # create NEW_movie_id column with values which increments by one 
     # for every change in value of movie_id column. 
     i = movie_id_sorted_df.movie_id  
-    movie_id_sorted_df['NEW_movie_id'] = i.ne(i.shift()).cumsum()
+    movie_id_sorted_df['NEW_movie_id'] = i.ne(i.shift()).cumsum()-1 # start ID from 0
     
     return movie_id_sorted_df
 
@@ -218,12 +219,15 @@ def test_rescaling(final_ratings_df):
     min_max = final_ratings_df.describe().loc[['min','max']].astype(int)
     print("\n ratings_df min and max values AFTER RESCALING... \n", min_max)
 
+
 def movielens_10m_statistics(ratings_df):
     num_users = unique_values(ratings_df["user_id"])
     num_items = unique_values(ratings_df["movie_id"])
     num_total_ratings =  ratings_df.shape[0]
 
-    print ("Number of unique items\t {}, Number of unique users\t {}".format(num_items, num_users))
+    print("Movielens_10m statistics ...")
+
+    print ("\nNumber of unique items\t {}, Number of unique users\t {}".format(num_items, num_users))
     
     # min and max value for each colum of a given dataframe
     min_max = ratings_df.describe().loc[['min','max']]#.astype(int)
