@@ -148,7 +148,7 @@ elif data_name == 'movielens_10m':
 else:
     raise NotImplementedError("ERROR")
 
-exit(-1)
+
 ''' ==============================================================
                         Training config
 ============================================================== '''
@@ -208,7 +208,6 @@ R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num
 user_train_set,item_train_set,user_test_set,item_test_set \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
 
-exit(-1)
 
 
 ''' ==============================================================
