@@ -148,7 +148,7 @@ elif data_name == 'movielens_10m':
 else:
     raise NotImplementedError("ERROR")
 
-
+exit(-1)
 ''' ==============================================================
                         Training config
 ============================================================== '''
