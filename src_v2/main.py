@@ -15,8 +15,10 @@ current_time = time.time()
 
 
 ''' ==============================================================
-                        Experiment setup
+                        model setup
 ============================================================== '''
+
+#TODO: use easydict
 
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
 parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
@@ -139,24 +141,12 @@ elif data_name == 'movielens_10m':
         ratings_df = movielens_10m_prepare_data(data_name)
     else: 
         ratings_df = load_movielens_10m_data()
-
+        
     # Data exploration (summary statitics) 
     num_users, num_items, num_total_ratings = movielens_10m_statistics(ratings_df)
 
 else:
     raise NotImplementedError("ERROR")
-
-
-# from sklearn.model_selection import KFold 
-# kf = KFold(n_splits=5, random_state=1000, shuffle=True) # random seed when shuffle=True
-# kf.get_n_splits(ratings)
-
-# print(kf)
-
-# for train_index, test_index in kf.split(ratings):
-#     print("TRAIN:", train_index, "TEST:", test_index)
-#     # ratings_train, ratings_test = ratings[train_index], ratings[test_index]
-#     # traing ra
 
 
 ''' ==============================================================
@@ -218,7 +208,7 @@ R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num
 user_train_set,item_train_set,user_test_set,item_test_set \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
 
-# X_dw = read_bill_term(path,data_name,num_items,num_voca)
+exit(-1)
 
 
 ''' ==============================================================

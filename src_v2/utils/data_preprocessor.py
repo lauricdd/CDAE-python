@@ -31,7 +31,7 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
         test_file_name = 'Test_ratings_fold_' + str(test_fold)
 
         ''' load train fold '''
-        print("load train fold ... ")
+        print("load train fold ... ", str(test_fold))
         with open(path + train_file_name) as f1:
             lines = f1.readlines()
             for line in lines:
@@ -63,7 +63,7 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
 
 
         ''' load test fold '''
-        print("load test fold ... ")
+        print("load test fold ... ", str(test_fold))
         with open(path + test_file_name) as f2:
             lines = f2.readlines()
             for line in lines:
@@ -89,11 +89,14 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
 
                 num_test_ratings = num_test_ratings + 1
 
-    print("num_train_ratings", type(num_train_ratings))
-    print("np.sum(train_mask_R)", type(np.sum(train_mask_R)))
+    # train_mask_R_sum = np.sum(train_mask_R).astype(np.int32)
+    
+    
+    print("num_train_ratings", num_train_ratings)
+    print("np.sum(train_mask_R)", np.sum(train_mask_R))
 
-    # assert num_train_ratings == np.sum(train_mask_R)
-
+    # assert num_train_ratings == train_mask_R_sum
+    
     print("num_test_ratings", num_test_ratings)
     print("np.sum(test_mask_R)", np.sum(test_mask_R))
 
@@ -106,27 +109,3 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
 
     return R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings,\
 user_train_set,item_train_set,user_test_set,item_test_set
-
-
-
-# def read_trust(path,data_name, num_users):
-#     if (data_name == 'politic_new') or (data_name == 'politic_old'):
-#         T = np.load(path + "user_user_matrix.npy")
-#     else:
-#         raise NotImplementedError("ERROR")
-#     return T
-
-
-# def read_bill_term(path,data_name,num_items,num_voca):
-#     file = path + 'Bill_Term'
-#     X_dw = np.zeros((num_items,num_voca))
-#     with open(file,'r') as f:
-#         contents = f.readlines()
-#         for line in contents:
-#             elements = line.split('\t')
-#             d = int(elements[0])
-#             w = int(elements[1])
-#             frequency = int(elements[2])
-#             X_dw[d,w] = frequency
-#     return X_dw
-
