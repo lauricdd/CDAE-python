@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#  -*- coding: utf-8 -*-
+
 import numpy as np
 import os
 from numpy import inf
@@ -8,26 +11,44 @@ import matplotlib.pyplot as plt
 from tensorflow.contrib.layers import batch_norm
 import functools
 
-def evaluation(test_R,test_mask_R,Estimated_R,num_test_ratings):
+def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
+    '''  
+        Error metrics:
+        compare predicted rating values (Estimated_R) with 
+        observed values (ratings in the test set (test_R))
+        num_test_ratings = number of observations (N)
+    '''
 
-    pre_numerator = np.multiply((test_R - Estimated_R), test_mask_R)
-    numerator = np.sum(np.square(pre_numerator))
-    denominator = num_test_ratings
-    RMSE = np.sqrt(numerator / float(denominator))
+    ''' 
+        Root-Mean-Square Error 
+        RMSE = sqrt(sum(Pi – Oi)^2 * 1/N)
+    '''
+    pre_numerator = np.multiply((test_R - Estimated_R), test_mask_R) # observed - predicted values
+    numerator = np.sum(np.square(pre_numerator))  # squared differences
+    RMSE = np.sqrt(numerator / float(num_test_ratings))
 
+    ''' 
+        Mean Absolute Error
+        MAE = 1/N * sum(Pi – Oi)
+    '''
     pre_numeartor = np.multiply((test_R - Estimated_R), test_mask_R)
     numerator = np.sum(np.abs(pre_numeartor))
-    denominator = num_test_ratings
-    MAE = numerator / float(denominator)
+    MAE = numerator / float(num_test_ratings)
 
-    pre_numeartor1 = np.sign(Estimated_R - 0.5)
+    ''' 
+        Accuracy = 
+    '''
+    pre_numerator1 = np.sign(Estimated_R - 0.5)
     tmp_test_R = np.sign(test_R - 0.5)
 
-    pre_numerator2 = np.multiply((pre_numeartor1 == tmp_test_R), test_mask_R)
+    pre_numerator2 = np.multiply((pre_numerator1 == tmp_test_R), test_mask_R)
     numerator = np.sum(pre_numerator2)
-    denominator = num_test_ratings
-    ACC = numerator / float(denominator)
+    ACC = numerator / float(num_test_ratings)
 
+    '''
+        Negative Average Log-Likelihood (NALL)
+        loss=-log(y)
+    '''
     a = np.log(Estimated_R)
     b = np.log(1 - Estimated_R)
     a[a == -inf] = 0
@@ -37,10 +58,10 @@ def evaluation(test_R,test_mask_R,Estimated_R,num_test_ratings):
     tmp_r = a * (tmp_r > 0) + b * (tmp_r == 0)
     tmp_r = np.multiply(tmp_r, test_mask_R)
     numerator = np.sum(tmp_r)
-    denominator = num_test_ratings
-    AVG_loglikelihood = numerator / float(denominator)
+    AVG_loglikelihood = numerator / float(num_test_ratings)
 
     return RMSE,MAE,ACC,AVG_loglikelihood
+
 
 def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,current_time,
                  args,model_name,data_name,train_ratio,hidden_neuron,random_seed,optimizer_method,lr):

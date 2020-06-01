@@ -14,9 +14,9 @@ warnings.filterwarnings('ignore')
 current_time = time.time()
 
 
-''' ==============================================================
-                        model setup
-============================================================== '''
+# ------------------------------------------------------------------ #
+                    ##### Model setup #####
+# ------------------------------------------------------------------ #
 
 #TODO: use easydict
 
@@ -25,7 +25,7 @@ parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='movielens_10m')
+parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_new')
 
 # train/test fold for training
 # TODO: iterate all folds at once 
@@ -46,11 +46,8 @@ parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','
 
 # In tensorflow 2.0
 # ValueError: rate must be a scalar tensor or a float in the range [0, 1), got 1
-# 1.0 / (1 - rate) 
 
 # used to control the dropout rate when training 
-# parser.add_argument('--keep_prob', type=float, default=1.0) # tf 1.0
-######Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`. 
 parser.add_argument('--keep_prob', type=float, default=0.3)
 
 # gradient clipping: prevent exploding gradients
@@ -89,9 +86,9 @@ np.random.seed(random_seed)
 tf.compat.v1.set_random_seed(random_seed)
 
 
-''' ==============================================================
-                        Data attributes
-============================================================== '''
+# ------------------------------------------------------------------ #
+                    ##### Data managing #####
+# ------------------------------------------------------------------ #
 
 
 model_name = args.model_name
@@ -149,9 +146,9 @@ else:
     raise NotImplementedError("ERROR")
 
 
-''' ==============================================================
-                        Training config
-============================================================== '''
+# ------------------------------------------------------------------ #
+                    ##### Training config #####
+# ------------------------------------------------------------------ #
  
 a = args.a
 b = args.b
@@ -209,10 +206,6 @@ user_train_set,item_train_set,user_test_set,item_test_set \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
 
 
-
-''' ==============================================================
-                        Model config
-============================================================== '''
 
 print ("Type of Model : %s" %model_name)
 print ("Type of Data : %s" %data_name)
