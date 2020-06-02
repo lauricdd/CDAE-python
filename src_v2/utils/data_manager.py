@@ -15,9 +15,7 @@ def movielens_10m_prepare_data(dataset):
     load data from MovieLens 10M Dataset
     http://grouplens.org/datasets/movielens/
     
-    # Note that this method uses ua.base and ua.test in the dataset.
-    # :return: train_users, train_x, test_users, test_x
-    # :rtype: list of int, numpy.array, list of int, numpy.array
+    # :return: ratings_df
     '''
 
     DATASET_URL = "http://files.grouplens.org/datasets/movielens/ml-10m.zip"

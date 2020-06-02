@@ -62,6 +62,26 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
 
     return RMSE,MAE,ACC,AVG_loglikelihood
 
+# def top_n_evaluation():
+    ''' top-N metrics over recommendation lists '''
+    ''' These metrics treat the recommendation list as a classification of relevant items. '''
+    ''' Mean Average Precision (MAP@K) gives insight into how relevant the list of recommended items are '''
+    
+    # Cumulative sum: precision at k=1, at k=2, at k=3 ...
+    # Average Precision, which applies to a single data point (like a single user). 
+
+    # is_relevant = np.in1d(recommended_items, relevant_items, assume_unique=True)
+
+
+    # Average precision up to the Kth item (it applies to a single data point)
+    # p_at_k = is_relevant * np.cumsum(is_relevant, dtype=np.float32) / (1 + np.arange(is_relevant.shape[0]))
+
+    # AP@K rel(k) is just an indicator that says whether that kth item was relevant (rel(k)=1) or not (rel(k)=0). I'd like to point out that instead of recommending N items would could have recommended,
+    # AP@N=1m∑k=1N(P(k) if kth item was relevant)
+    # MAP@K to average the AP@N metric over all your |U| users. 
+    # map_score = np.sum(p_at_k) / np.min([relevant_items.shape[0], is_relevant.shape[0]])
+
+    # return map_score
 
 def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,current_time,
                  args,model_name,data_name,train_ratio,hidden_neuron,random_seed,optimizer_method,lr):
@@ -216,8 +236,11 @@ def SDAE_calculate(model_name,X_c, layer_structure, W, b, batch_normalization, f
             if batch_normalization == "True":
                 before_activation = batch_norm(before_activation)
             hidden_value = g_act(before_activation)
-        if itr1 < len(layer_structure) - 2: # add dropout except final layer
-            hidden_value = tf.nn.dropout(hidden_value, 1 - (model_keep_prob))
+        
+        # fraction of the activations coming from g_act that will be disactivated (dropped)
+        if itr1 < len(layer_structure) - 2: # add dropout except final layer. 
+            hidden_value = tf.nn.dropout(hidden_value, rate=1 - (model_keep_prob))
+        
         if itr1 == int(len(layer_structure) / 2) - 1:
             Encoded_X = hidden_value
 

@@ -22,7 +22,7 @@ env/
 .DS_Store
 
 # Ignore directories
-data/
+data/movielens_10m
 results/
 
 # Ignore tf v2.0 upgrade log

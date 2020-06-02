@@ -1,11 +1,11 @@
-from utils.data_preprocessor import *
-from utils.data_manager import *
-from CDAE import CDAE
-from DAE import DAE
 import tensorflow as tf
 import time
 import argparse
 
+from utils.data_preprocessor import *
+from utils.data_manager import *
+from CDAE import CDAE
+from DAE import DAE
 
 # Ignore warning TODO: check warnings
 import warnings
@@ -21,16 +21,15 @@ current_time = time.time()
 #TODO: use easydict
 
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
-parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
+parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
 parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_new')
 
 # train/test fold for training
-# TODO: iterate all folds at once 
-parser.add_argument('--test_fold', type=int, default=1)
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielenes 1,2,3,4,5
+parser.add_argument('--test_fold', type=int, default=1) # TODO: iterate all folds at once 
 
 # training epochs
 parser.add_argument('--train_epoch', type=int, default=100)
@@ -43,12 +42,9 @@ parser.add_argument('--lr', type=float, default=1e-3)
 parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','RMSProp', \
                     'GradientDescent','Momentum'],default='Adam')
 
-
-# In tensorflow 2.0
-# ValueError: rate must be a scalar tensor or a float in the range [0, 1), got 1
-
-# used to control the dropout rate when training 
-parser.add_argument('--keep_prob', type=float, default=0.3)
+# dropout rate (fraction of the input units to drop) when training 
+# NOTE: setting keep_prob to exactly 1.0, this means the probability of dropping any node becomes 0
+parser.add_argument('--keep_prob', type=float, default=1.0) 
 
 # gradient clipping: prevent exploding gradients
 parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')
@@ -206,7 +202,6 @@ user_train_set,item_train_set,user_test_set,item_test_set \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
 
 
-
 print ("Type of Model : %s" %model_name)
 print ("Type of Data : %s" %data_name)
 print ("# of User : %d" %num_users)
@@ -215,7 +210,7 @@ print ("Test Fold : %d" %test_fold)
 print ("Random seed : %d" %random_seed)
 print ("Hidden neuron : %d" %hidden_neuron)
 
-
+''' Launch the evaluation graph in a session '''
 with tf.compat.v1.Session() as sess:
    
     if model_name == "CDAE":
@@ -243,9 +238,10 @@ with tf.compat.v1.Session() as sess:
                     train_epoch,batch_size, lr, optimizer_method, display_step, random_seed,
                     decay_epoch_step,lambda_value,
                     user_train_set, item_train_set, user_test_set, item_test_set,
-                    result_path,date,data_name,model_name,test_fold,corruption_level)
+                    result_path,date,data_name,model_name,test_fold,corruption_level) 
+                    
+        # train and test the model
+        model.run()
+    
     else:
         raise NotImplementedError("ERROR")
-
-    # train and test the model
-    model.run()
