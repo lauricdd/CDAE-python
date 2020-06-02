@@ -52,7 +52,7 @@ def movielens_10m_prepare_data(dataset):
             # convert ratings into implicit
             ratings_df = convert_ratings_into_implicit(ratings_df) 
             
-            # scale user and movie IDs to successive one ranged IDs
+            # rescale user and movie IDs to successive one ranged IDs
             ratings_df = rescale_ids(ratings_df)
 
             # save new formatted file
@@ -131,7 +131,7 @@ def k_fold_splitting(data_dir, data_file):
 
 def rescale_ids(ratings_df):
     ''' create successive one ranged IDs for user_id and movie_id columns '''
-
+    untouched_ratings_df = ratings_df
     ratings_df = gen_new_user_id(ratings_df)
     movie_id_sorted_df = gen_new_movie_id(ratings_df)
 
@@ -140,7 +140,7 @@ def rescale_ids(ratings_df):
     final_ratings_df = ratings_df.merge(movie_id_sorted_df, on='movie_id', how='left') 
     
     # check correpondence between original and new ids
-    test_rescaling(final_ratings_df)
+    test_rescaling(untouched_ratings_df, final_ratings_df)
 
     final_ratings_df = final_ratings_df[['NEW_user_id', 'NEW_movie_id', 'rating']]  
     final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # rename cols
@@ -182,9 +182,22 @@ def gen_new_movie_id(ratings_df):
     return movie_id_sorted_df
 
 
-def test_rescaling(final_ratings_df):
-    ''' use testing rows to check correspondance between original 
-    movie_id and NEW_movie_id. Same for user_id and NEW_user_id '''
+def test_rescaling(untouched_ratings_df, final_ratings_df):
+    ''' original user_id, movie_id and rating triplets due to resorting 
+    needed to generate NEW_movie_id.  '''
+
+    print("Dataframe rows BEFORE rescaling")
+    row_1 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 8874) & (untouched_ratings_df['user_id'] == 92 )]
+    row_2 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 32076) & (untouched_ratings_df['user_id'] == 100 )]
+    row_3 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 973) & (untouched_ratings_df['user_id'] == 112 )]
+    row_4 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 538) & (untouched_ratings_df['user_id'] == 122 )]
+    row_5 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 316) & (untouched_ratings_df['user_id'] == 135 )]
+    print(row_1, "\n")
+    print(row_2, "\n")
+    print(row_3, "\n")
+    print(row_4, "\n")
+    print(row_5, "\n")
+
     
     print("Testing rows for checking correctness of the rescaling")
     row_1 = final_ratings_df[(final_ratings_df['movie_id'] == 8874) & (final_ratings_df['user_id'] == 92 )]

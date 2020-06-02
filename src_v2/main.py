@@ -25,10 +25,10 @@ parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default=
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_new')
+parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='movielens_10m')
 
 # train/test fold for training
-# for politic_old and politic_new: 0,1,2,3,4. In the case of movielenes 1,2,3,4,5
+# for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
 parser.add_argument('--test_fold', type=int, default=1) # TODO: iterate all folds at once 
 
 # training epochs
@@ -42,9 +42,9 @@ parser.add_argument('--lr', type=float, default=1e-3)
 parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','RMSProp', \
                     'GradientDescent','Momentum'],default='Adam')
 
-# dropout rate (fraction of the input units to drop) when training 
+# dropout: keep_prob to specify the fraction of the input units to keep while training 
 # NOTE: setting keep_prob to exactly 1.0, this means the probability of dropping any node becomes 0
-parser.add_argument('--keep_prob', type=float, default=1.0) 
+parser.add_argument('--keep_prob', type=float, default=0.0) 
 
 # gradient clipping: prevent exploding gradients
 parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')
@@ -117,9 +117,15 @@ elif data_name == 'politic_old': # Politic2013
     num_items = 7162
     num_total_ratings = 2779703
 
-    df2 = pd.read_csv("../data/politic_old/Test_ratings_fold_0" ,sep = "\t")
+    # df2 = pd.read_csv("../data/politic_old/Test_ratings_fold_0" ,sep = "\t")
 
-    print("df2\n", df2.count())
+    # print("df2\n", df2.count()) 
+    ## df2
+    #  835     555939
+    # 4554    555939
+    # 1       555939
+    # dtype: int64
+
     # num_users = df2[2].nunique()
     # num_total_ratings =  df2.shape[0]
 
@@ -134,7 +140,7 @@ elif data_name == 'movielens_10m':
         ratings_df = movielens_10m_prepare_data(data_name)
     else: 
         ratings_df = load_movielens_10m_data()
-        
+
     # Data exploration (summary statitics) 
     num_users, num_items, num_total_ratings = movielens_10m_statistics(ratings_df)
 
@@ -220,7 +226,8 @@ with tf.compat.v1.Session() as sess:
         #layer_structure = [num_items, hidden_neuron, num_items]
         layer_structure = [num_items, 512, 128, hidden_neuron, 128, 512, num_items]
         n_layer = len(layer_structure)
-
+        
+        # Initialize weights
         pre_W = dict()
         pre_b = dict()
         
@@ -230,7 +237,7 @@ with tf.compat.v1.Session() as sess:
             # get initial weights using do_not_pretrain
             pre_W[itr], pre_b[itr] = initial_DAE.do_not_pretrain()
 
-            # get initial weights using do_pretrain
+            # get initial weights using do_pretrain??
 
         model = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,
@@ -242,6 +249,60 @@ with tf.compat.v1.Session() as sess:
                     
         # train and test the model
         model.run()
+
+    
+    # KNN machine learning
+    # TODO: apply_hyperparams_tuning?
+    # elif model_name == "SLIMElasticNet": 
+
+        # from SLIMElasticNetRecommender import SLIMElasticNetRecommender 
+        # from Data_manager.DataSplitter_leave_k_out import 
+
+        # print("hola")
+
+        # dataset_object = Movielens10MReader() # DATASET_SUBFOLDER url
+
+        # dataSplitter = DataSplitter_leave_k_out(dataset_object, k_out_value=2)
+
+        # dataSplitter.load_data()
+        # URM_train, URM_validation, URM_test = dataSplitter.get_holdout_split()
+
+
+        # from Base.Evaluation.Evaluator import EvaluatorHoldout
+
+        # evaluator = EvaluatorHoldout(URM_test, [5, 20], exclude_seen=True)
+
+
+        # output_root_path = "./result_experiments/"
+
+        # # If directory does not exist, create
+        # if not os.path.exists(output_root_path):
+        #     os.makedirs(output_root_path)
+
+
+        # logFile = open(output_root_path + "result_all_algorithms.txt", "a")
+
+
+        # for recommender_class in recommender_list:
+
+        #     try:
+
+        #         print("Algorithm: {}".format(recommender_class))
+
+
+        #         recommender = recommender_class(URM_train)
+        #         recommender.fit()
+
+        #         results_run, results_run_string = evaluator.evaluateRecommender(recommender)
+
+        #         print("Algorithm: {}, results: \n{}".format(recommender.__class__, results_run_string))
+        #         logFile.write("Algorithm: {}, results: \n{}\n".format(recommender.__class__, results_run_string))
+        #         logFile.flush()
+
+        #     except Exception as e:
+        #         traceback.print_exc()
+        #         logFile.write("Algorithm: {} - Exception: {}\n".format(recommender_class, str(e)))
+        #         logFile.flush()
     
     else:
         raise NotImplementedError("ERROR")
