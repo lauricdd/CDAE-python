@@ -5,10 +5,11 @@ import re
 # Read ratings file and train/test split
 def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed):
 
-    user_train_set = set()
-    user_test_set = set()
-    item_train_set = set()
-    item_test_set = set()
+    # train and test sets
+    # user_train_set = set()
+    # user_test_set = set()
+    # item_train_set = set()
+    # item_test_set = set()
 
     # initialize train/test vectors (num_users*num_items size)
     R = np.zeros((num_users,num_items))
@@ -31,7 +32,7 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
         test_file_name = 'Test_ratings_fold_' + str(test_fold)
 
         ''' load train fold '''
-        print("load train fold ... ", str(test_fold))
+        print("\nLoad train fold ... ", str(test_fold))
         with open(path + train_file_name) as f1:
             lines = f1.readlines()
             for line in lines:
@@ -46,10 +47,6 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
 
                 ''' Total '''
                 R[user, item] = voting
-                # print("user int ", user)
-                # print("item int ", item)
-                # print("voting int", voting)
-                
                 mask_R[user, item] = 1
 
                 ''' Train '''
@@ -57,13 +54,13 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
                 train_mask_R[user, item] = 1
                 C[user, item] = a #????
 
-                user_train_set.add(user)
-                item_train_set.add(item)
+                # user_train_set.add(user)
+                # item_train_set.add(item)
                 num_train_ratings = num_train_ratings + 1
 
 
         ''' load test fold '''
-        print("load test fold ... ", str(test_fold))
+        print("Load test fold ... ", str(test_fold))
         with open(path + test_file_name) as f2:
             lines = f2.readlines()
             for line in lines:
@@ -84,28 +81,24 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
                 test_R[user, item] = int(voting)
                 test_mask_R[user, item] = 1
 
-                user_test_set.add(user)
-                item_test_set.add(item)
+                # user_test_set.add(user)
+                # item_test_set.add(item)
 
                 num_test_ratings = num_test_ratings + 1
 
     # train_mask_R_sum = np.sum(train_mask_R).astype(np.int32)
-    
-    
-    print("num_train_ratings", num_train_ratings)
-    print("np.sum(train_mask_R)", np.sum(train_mask_R))
 
+    # print("num_train_ratings", num_train_ratings)
+    # print("np.sum(train_mask_R)", np.sum(train_mask_R))
     # assert num_train_ratings == train_mask_R_sum
     
-    print("num_test_ratings", num_test_ratings)
-    print("np.sum(test_mask_R)", np.sum(test_mask_R))
-
+    # print("num_test_ratings", num_test_ratings)
+    # print("np.sum(test_mask_R)", np.sum(test_mask_R))
     # assert num_test_ratings == np.sum(test_mask_R)
 
-    print("num_total_ratings", num_total_ratings)
-    print("num_train_ratings + num_test_ratings", num_train_ratings + num_test_ratings)
-
+    # print("num_total_ratings", num_total_ratings)
+    # print("num_train_ratings + num_test_ratings", num_train_ratings + num_test_ratings)
     # assert num_total_ratings == num_train_ratings + num_test_ratings
 
-    return R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings,\
-user_train_set,item_train_set,user_test_set,item_test_set
+    return R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings, \
+    # user_train_set,item_train_set,user_test_set,item_test_set

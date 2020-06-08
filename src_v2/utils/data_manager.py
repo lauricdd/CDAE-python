@@ -183,10 +183,10 @@ def gen_new_movie_id(ratings_df):
 
 
 def test_rescaling(untouched_ratings_df, final_ratings_df):
-    ''' original user_id, movie_id and rating triplets due to resorting 
-    needed to generate NEW_movie_id.  '''
+    ''' use testing rows to check correspondance between original 
+    movie_id and NEW_movie_id. Same for user_id and NEW_user_id '''
 
-    print("Dataframe rows BEFORE rescaling")
+    print("Dataframe rows before rescaling user_ids")
     row_1 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 8874) & (untouched_ratings_df['user_id'] == 92 )]
     row_2 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 32076) & (untouched_ratings_df['user_id'] == 100 )]
     row_3 = untouched_ratings_df[(untouched_ratings_df['movie_id'] == 973) & (untouched_ratings_df['user_id'] == 112 )]
@@ -216,8 +216,6 @@ def test_rescaling(untouched_ratings_df, final_ratings_df):
     print("\n ratings_df min and max values AFTER RESCALING... \n", min_max)
 
 
-
-
 def unique_values(column):
     ''' count distinct values of a dataframe column'''
     count = column.nunique() 
@@ -240,14 +238,20 @@ def movielens_10m_statistics(ratings_df):
 
     print("Movielens_10m statistics ...")
 
-    print ("\nNumber of unique items\t {}, Number of unique users\t {}".format(num_items, num_users))
-    
     # min and max value for each colum of a given dataframe
     min_max = ratings_df.describe().loc[['min','max']]#.astype(int)
-    print("min_max values... \n", min_max, end="\n")
+    print("min_max values: \n",  min_max)
 
-    print ("Average interactions per user {:.2f}".format(num_total_ratings/num_users))
-    print ("Average interactions per item {:.2f}".format(num_total_ratings/num_items))
-    print ("Sparsity {:.2f} %\n".format((1-float(num_total_ratings)/(num_items*num_users))*100))
+    statistics_string = "\nNumber of unique items: {}, \nNumber of unique users: {}, \nAverage interactions per user: {:.2f},  \
+        \nAverage interactions per item {:.2f}, \nSparsity {:.2f}%".format(
+        num_items,
+        num_users,
+        (num_total_ratings/num_users),
+        (num_total_ratings/num_items),
+        (1-float(num_total_ratings)/(num_items*num_users))*100
+    )
+
+    print(statistics_string)
 
     return num_users, num_items, num_total_ratings
+
