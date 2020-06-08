@@ -7,6 +7,7 @@ from utils.data_manager import *
 
 from CDAE import CDAE
 from DAE import DAE
+from recommenders.SLIM import SLIM
 
 # Ignore warning TODO: check warnings
 import warnings
@@ -22,11 +23,11 @@ current_time = time.time()
 #TODO: use easydict
 
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
-parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
+parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='SLIMElasticNet')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_old')
+parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_new')
 
 # train/test fold for training
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
@@ -74,6 +75,16 @@ parser.add_argument('--b', type=float, default=0)
 '''SDAE: Stacked Denoising Autoencoder
 VAE: Variational Autoencoder '''
 parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
+
+# SLIM parameters
+
+# l1 regularization constant
+parser.add_argument('--l1_reg', type=float, default = 0.001)
+# l2 regularization constant
+parser.add_argument('--l2_reg', type=float, default = 0.0001)
+# underlying learner for SLIM learner
+parser.add_argument('--learner', choices=['sgd','elasticnet','fs_sgd'], default = 'elasticnet')
+
 
 args = parser.parse_args()
 
@@ -250,6 +261,17 @@ with tf.compat.v1.Session() as sess:
                     
         # train and test the model
         model.run()
+
     
+    # Machine learning approach to Item-based CF
+    # Sparse LInear Method
+
+    elif model_name == "SLIMElasticNet":      
+        # TODO: apply_hyperparams_tuning?
+
+        model = SLIM(l1_reg=args.l1_reg,l2_reg=args.l2_reg,model=args.learner)
+        print(model)
+        model.fit(R)
+
     else:
         raise NotImplementedError("ERROR")
