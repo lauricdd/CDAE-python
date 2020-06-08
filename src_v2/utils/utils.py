@@ -84,7 +84,8 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
     # return map_score
 
 def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,current_time,
-                 args,model_name,data_name,train_ratio,hidden_neuron,random_seed,optimizer_method,lr):
+                 args,model_name,data_name,hidden_neuron,random_seed,optimizer_method,lr):
+
     if not os.path.exists(result_path):
         os.makedirs(result_path)
 
@@ -129,8 +130,6 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
         f.write(str(data_name))
         f.write('\t')
         f.write(str(model_name))
-        f.write('\t')
-        f.write(str(train_ratio))
         f.write('\t')
         f.write(str(current_time))
         f.write('\t')
@@ -239,7 +238,8 @@ def SDAE_calculate(model_name,X_c, layer_structure, W, b, batch_normalization, f
         
         # fraction of the activations coming from g_act that will be disactivated (dropped)
         if itr1 < len(layer_structure) - 2: # add dropout except final layer. 
-            hidden_value = tf.nn.dropout(hidden_value, rate=1 - (model_keep_prob))
+            # hidden_value = tf.nn.dropout(hidden_value, rate=1 - (model_keep_prob))
+            hidden_value = tf.nn.dropout(hidden_value, 1 - (model_keep_prob))
         
         if itr1 == int(len(layer_structure) / 2) - 1:
             Encoded_X = hidden_value
