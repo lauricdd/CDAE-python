@@ -4,6 +4,7 @@ import argparse
 
 from utils.data_preprocessor import *
 from utils.data_manager import *
+
 from CDAE import CDAE
 from DAE import DAE
 
@@ -21,11 +22,11 @@ current_time = time.time()
 #TODO: use easydict
 
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
-parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='CDAE')
+parser.add_argument('--model_name', choices=['CDAE'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='movielens_10m')
+parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_old')
 
 # train/test fold for training
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
@@ -62,17 +63,17 @@ parser.add_argument('--corruption_level', type=float, default=0.3)
 parser.add_argument('--lambda_value', type=float, default=0.001)
 
 # activation functions
-parser.add_argument('--f_act', choices=['Sigmoid','Relu','Elu','Tanh',"Identity"], default = 'Sigmoid')
-parser.add_argument('--g_act', choices=['Sigmoid','Relu','Elu','Tanh',"Identity"], default = 'Sigmoid')
+parser.add_argument('--f_act', choices=['Sigmoid','Relu','Elu','Tanh','Identity'], default = 'Sigmoid')
+parser.add_argument('--g_act', choices=['Sigmoid','Relu','Elu','Tanh','Identity'], default = 'Sigmoid')
 
-# for reading ratings ???
+# for reading ratings file
 parser.add_argument('--a', type=float, default=1)
 parser.add_argument('--b', type=float, default=0)
 
 # Autoencoder types:
 '''SDAE: Stacked Denoising Autoencoder
 VAE: Variational Autoencoder '''
-parser.add_argument('--encoder_method', choices=['SDAE','VAE'],default='SDAE')
+parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 
 args = parser.parse_args()
 
@@ -203,18 +204,19 @@ date = "0203"
 result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold) +  '/' + str(current_time)+"/"
 
 # read ratings file and train/test split
-R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings,\
-user_train_set,item_train_set,user_test_set,item_test_set \
+R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
 
 
-print ("Type of Model : %s" %model_name)
-print ("Type of Data : %s" %data_name)
-print ("# of User : %d" %num_users)
-print ("# of Item : %d" %num_items)
-print ("Test Fold : %d" %test_fold)
-print ("Random seed : %d" %random_seed)
-print ("Hidden neuron : %d" %hidden_neuron)
+# model params
+# print("model arguments:\n", args, end="\n")
+model_string = "\nType of Model: {}, \nDataset: {}, \nTest fold: {}, \nHidden neurons: {} \n".format(
+    model_name,
+    data_name,
+    test_fold,
+    hidden_neuron
+)
+print(model_string)
 
 ''' Launch the evaluation graph in a session '''
 with tf.compat.v1.Session() as sess:
@@ -244,65 +246,10 @@ with tf.compat.v1.Session() as sess:
                     R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,
                     train_epoch,batch_size, lr, optimizer_method, display_step, random_seed,
                     decay_epoch_step,lambda_value,
-                    user_train_set, item_train_set, user_test_set, item_test_set,
                     result_path,date,data_name,model_name,test_fold,corruption_level) 
                     
         # train and test the model
         model.run()
-
-    
-    # KNN machine learning
-    # TODO: apply_hyperparams_tuning?
-    # elif model_name == "SLIMElasticNet": 
-
-        # from SLIMElasticNetRecommender import SLIMElasticNetRecommender 
-        # from Data_manager.DataSplitter_leave_k_out import 
-
-        # print("hola")
-
-        # dataset_object = Movielens10MReader() # DATASET_SUBFOLDER url
-
-        # dataSplitter = DataSplitter_leave_k_out(dataset_object, k_out_value=2)
-
-        # dataSplitter.load_data()
-        # URM_train, URM_validation, URM_test = dataSplitter.get_holdout_split()
-
-
-        # from Base.Evaluation.Evaluator import EvaluatorHoldout
-
-        # evaluator = EvaluatorHoldout(URM_test, [5, 20], exclude_seen=True)
-
-
-        # output_root_path = "./result_experiments/"
-
-        # # If directory does not exist, create
-        # if not os.path.exists(output_root_path):
-        #     os.makedirs(output_root_path)
-
-
-        # logFile = open(output_root_path + "result_all_algorithms.txt", "a")
-
-
-        # for recommender_class in recommender_list:
-
-        #     try:
-
-        #         print("Algorithm: {}".format(recommender_class))
-
-
-        #         recommender = recommender_class(URM_train)
-        #         recommender.fit()
-
-        #         results_run, results_run_string = evaluator.evaluateRecommender(recommender)
-
-        #         print("Algorithm: {}, results: \n{}".format(recommender.__class__, results_run_string))
-        #         logFile.write("Algorithm: {}, results: \n{}\n".format(recommender.__class__, results_run_string))
-        #         logFile.flush()
-
-        #     except Exception as e:
-        #         traceback.print_exc()
-        #         logFile.write("Algorithm: {} - Exception: {}\n".format(recommender_class, str(e)))
-        #         logFile.flush()
     
     else:
         raise NotImplementedError("ERROR")

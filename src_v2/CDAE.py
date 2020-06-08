@@ -6,13 +6,11 @@ from numpy import inf
 
 class CDAE():
     def __init__(self,sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
-                 num_users,num_items,hidden_neuron,f_act,g_act,
-                 R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,
-                 train_epoch,batch_size,lr,optimizer_method,
-                 display_step,random_seed,
-                 decay_epoch_step,lambda_value,
-                 user_train_set, item_train_set, user_test_set, item_test_set,
-                 result_path,date,data_name,model_name,train_ratio,corruption_level):
+                    num_users,num_items,hidden_neuron,f_act,g_act,
+                    R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,
+                    train_epoch,batch_size, lr, optimizer_method, display_step, random_seed,
+                    decay_epoch_step,lambda_value,
+                    result_path,date,data_name,model_name,test_fold,corruption_level):
 
         self.sess = sess
         self.args = args
@@ -64,17 +62,11 @@ class CDAE():
         self.test_acc_list = []
         self.test_avg_loglike_list = []
 
-        self.user_train_set = user_train_set
-        self.item_train_set = item_train_set
-        self.user_test_set = user_test_set
-        self.item_test_set = item_test_set
-
         self.result_path = result_path
         self.date = date
         self.data_name = data_name
 
         self.model_name = model_name
-        self.train_ratio = train_ratio
 
         self.corruption_level = corruption_level
 
@@ -100,8 +92,7 @@ class CDAE():
                 self.test_model(epoch_itr)
         
         make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,self.current_time,
-                     self.args,self.model_name,self.data_name,self.train_ratio,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
-
+                     self.args,self.model_name,self.data_name,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
     
     def prepare_model(self):
         self.model_mask_corruption = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_items])
