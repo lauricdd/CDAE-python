@@ -10,9 +10,11 @@ import numpy as np
 # from itertools import izip
 # from operator import itemgetter
 from scipy.sparse import csr_matrix, coo_matrix
+import time, sys
 
 from recommenders.sparse import fast_sparse_matrix
 from recommenders.base_recommender import BaseRecommender
+from recommenders.seconds_to_biggest_unit import seconds_to_biggest_unit
 
 class ItemSimilarityRecommender(BaseRecommender):
     """
@@ -40,31 +42,63 @@ class ItemSimilarityRecommender(BaseRecommender):
             dataset = fast_sparse_matrix(dataset)
        
         num_users, num_items = dataset.shape
-        print("\nSLIM recommender fit ... num_users AFTER parsing", num_users)
-        print("SLIM recommender fit ... num_items AFTER parsing", num_items)
+        # print("\nSLIM recommender fit ... num_users AFTER parsing", num_users)
+        # print("SLIM recommender fit ... num_items AFTER parsing", num_items)
 
         # build up a sparse similarity matrix
-        import time
         print("Building up a sparse similarity matrix ... \n")
         start_time = time.time()
+        start_time_printBatch = start_time
+
+
+        ##########################    
+        # Select topK values
+        # Sorting is done in three steps. Faster then plain np.argsort for higher number of items
+        # - Partition the data to extract the set of relevant items
+        # - Sort only the relevant items
+        # - Get the original item index
+        ##########################
+        
 
         data = []
         row = []
         col = []
-        for j in range(num_items):
+        
+        # fit each item's factors sequentially (not in parallel)
+        for j in range(num_items): # j is the current item
             w = self.compute_similarities(dataset,j)
+            
             for k,v in enumerate(w):
                 if v != 0:
                     data.append(v)
                     row.append(j)
                     col.append(k)
+
+            elapsed_time = time.time() - start_time
+            new_time_value, new_time_unit = seconds_to_biggest_unit(elapsed_time)
+
+            if time.time() - start_time_printBatch > 300 or j == num_items-1:
+                print("Processed {} ( {:.2f}% ) in {:.2f} {}. Items per second: {:.2f}".format(
+                    j+1,
+                    100.0* float(j+1)/num_items,
+                    new_time_value,
+                    new_time_unit,
+                    float(j)/elapsed_time))
+
+                sys.stdout.flush()
+                sys.stderr.flush()
+
+                start_time_printBatch = time.time()
+
         idx = np.array([row,col],dtype='int32')
+       
+        # generate the sparse weight matrix
         self.similarity_matrix = csr_matrix((data,idx),(num_items,num_items))
 
-        end_time = time.time()
-        print("total time taken for building similarity_matrix: ", end_time - start_time)
+        # end_time = time.time()
+        # print("total time taken for building similarity_matrix: ", end_time - start_time)
 
-        print("similarity_matrix ", self.similarity_matrix)
+        # print("similarity_matrix ", self.similarity_matrix)
 
     def _create_archive(self):
         """

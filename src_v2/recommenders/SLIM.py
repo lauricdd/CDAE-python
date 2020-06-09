@@ -35,8 +35,10 @@ class NNFeatureSelectingSGDRegressor(object):
         # find k-NN by brute force
         d = A.T.dot(a).flatten()  # distance = dot product
         nn = d.argsort()[-1:-1-self.k:-1]
+        
         # fit the model to selected features only
         self.model.fit(A[:,nn],a)
+        
         # set our weights for the selected "features" i.e. items
         self.coef_ = np.zeros(A.shape[1])
         self.coef_[nn] = self.model.coef_
@@ -71,32 +73,60 @@ class SLIM(ItemSimilarityRecommender):
                  ignore_negative_weights=False,
                  num_selected_features=200,
                  model='sgd'):
+                
+        assert l1_reg>=0 and l1_reg<=1, "SLIM: l1_ratio must be between 0 and 1, provided value was {}".format(l1_reg)
+
+        # to control the L1 and L2 penalty separately
+        # a * L1 + b * L2
+        # alpha = a + b and l1_ratio = a / (a + b)
         alpha = l1_reg+l2_reg
         l1_ratio = l1_reg/alpha
+
         if parse_version(sklearn.__version__) <= (0, 14, 1):
             # Backward compat: in old versions of scikit-learn l1_ratio had
             # the opposite sign...
             l1_ratio = (1 - l1_ratio)
+
+        # initialize the model
         if model == 'sgd':
-            self.model = SGDRegressor(penalty='elasticnet',fit_intercept=fit_intercept,alpha=alpha,l1_ratio=l1_ratio)
+            self.model = SGDRegressor(penalty='elasticnet',
+                                    fit_intercept=fit_intercept,
+                                    alpha=alpha,l1_ratio=l1_ratio)
         elif model == 'elasticnet':
-            self.model = ElasticNet(alpha=alpha,l1_ratio=l1_ratio,positive=True,fit_intercept=fit_intercept,copy_X=False)
+            self.model = ElasticNet(alpha=alpha,
+                                    l1_ratio=l1_ratio,
+                                    positive=True,
+                                    fit_intercept=fit_intercept,
+                                    copy_X=False)
         elif model == 'fs_sgd':
-            m = SGDRegressor(penalty='elasticnet',fit_intercept=fit_intercept,alpha=alpha,l1_ratio=l1_ratio)
+            m = SGDRegressor(penalty='elasticnet',
+                            fit_intercept=fit_intercept,
+                            alpha=alpha,
+                            l1_ratio=l1_ratio)
             self.model = NNFeatureSelectingSGDRegressor(m,num_selected_features)
         else:
             raise SystemExit('unknown model type: {0}'.format(model))
+        
         self.ignore_negative_weights = ignore_negative_weights
 
     def compute_similarities(self,dataset,j):
         """Compute item similarity weights for item j."""
-        # zero out the j-th column of the input so we get w[j] = 0
+        # get the target column
         a = dataset.fast_get_col(j)
+
+        # zero out the j-th column of the input so we get w[j] = 0
         dataset.fast_update_col(j,np.zeros(a.nnz))
+        
+        # fit one ElasticNet model per column
         self.model.fit(dataset.X,a.toarray().ravel())
+        
         # reinstate the j-th column
+        # finally, replace the original values of the j-th column
         dataset.fast_update_col(j,a.data)
-        w = self.model.coef_
+
+        w = self.model.coef_ # w contains the coefficient of the ElasticNet model
+       
+        # if keep only the non-zero values
         if self.ignore_negative_weights:
             w[w<0] = 0
 
