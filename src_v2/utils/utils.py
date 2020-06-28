@@ -12,14 +12,11 @@ from tensorflow.contrib.layers import batch_norm
 import functools
 import scipy.sparse as sps
 
-
+'''  
+    ERROR METRICS used for rating prediction task. Compare predicted rating values (Estimated_R) 
+    with observed values (ratings in the test set (test_R)) num_test_ratings = number of observations (N)
+'''
 def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
-
-    '''  
-        ERROR METRICS used for rating prediction task. Compare predicted rating values (Estimated_R) 
-        with observed values (ratings in the test set (test_R)) num_test_ratings = number of observations (N)
-    '''
-
     ''' 
         Root-Mean-Square Error 
         RMSE = sqrt(sum(Pi – Oi)^2 * 1/N)
@@ -36,6 +33,16 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
     numerator = np.sum(np.abs(pre_numeartor))
     MAE = numerator / float(num_test_ratings)
 
+    ''' 
+        Accuracy 
+    '''
+    pre_numerator1 = np.sign(Estimated_R - 0.5)
+    tmp_test_R = np.sign(test_R - 0.5)
+
+    pre_numerator2 = np.multiply((pre_numerator1 == tmp_test_R), test_mask_R)
+    numerator = np.sum(pre_numerator2)
+    ACC = numerator / float(num_test_ratings)
+    
     '''
         Negative Average Log-Likelihood (NALL)
         loss=-log(y)
@@ -51,70 +58,7 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
     numerator = np.sum(tmp_r)
     AVG_loglikelihood = numerator / float(num_test_ratings)
 
-
-    ''' 
-        RANKING METRICS used for top-N recommendation task. 
-        These metrics treat the recommendation list as a classification of relevant items. 
-    '''
-
-    ''' 
-        Accuracy 
-    '''
-    pre_numerator1 = np.sign(Estimated_R - 0.5)
-    tmp_test_R = np.sign(test_R - 0.5)
-
-    pre_numerator2 = np.multiply((pre_numerator1 == tmp_test_R), test_mask_R)
-    numerator = np.sum(pre_numerator2)
-    ACC = numerator / float(num_test_ratings)
-
-    '''
-        MAP@k (Mean Average Precision at k) .
-    '''
-    at=5
-
-    cumulative_MAP = 0.0
-    num_eval = 0
-
-    URM_test = sps.csr_matrix(test_R)
-
-    n_users = URM_test.shape[0]
-
-    for user_id in range(n_users):
-
-        if user_id % 1000 == 0:
-            print("Evaluated user {} of {}".format(user_id, n_users))
-
-        start_pos = URM_test.indptr[user_id]
-        end_pos = URM_test.indptr[user_id + 1]
-
-        if end_pos-start_pos>0:
-
-            relevant_items = URM_test.indices[start_pos:end_pos]
-
-            if len(relevant_items) > 0:
-                # recommended_items = recommender_object.recommend(user_id, at=at)
-                num_eval+=1
-
-                is_relevant = get_is_relevant(recommended_items, relevant_items)
-                cumulative_MAP += MAP(is_relevant, relevant_items)
-
-    cumulative_MAP /= num_eval
-
-    # print("Recommender performance is: Precision = {:.4f}, Recall = {:.4f}, MAP = {:.4f}".format(
-    #     cumulative_precision, cumulative_recall, cumulative_MAP))
-
-    # result_dict = {
-    #     "precision": cumulative_precision,
-    #     "recall": cumulative_recall,
-    #     "MAP": cumulative_MAP,
-    # }
-
-    # return result_dict
-
-    print("cumulative_MAP", cumulative_MAP)
-
     return RMSE, MAE, AVG_loglikelihood, ACC
-
 
 
 ''' 
@@ -133,11 +77,6 @@ def get_is_relevant(recommended_items, relevant_items):
 
     return is_relevant
 
-
-    recall_score = np.sum(is_relevant, dtype=np.float32) / relevant_items.shape[0]
-
-    return recall_score
-
 '''
     Mean Average Precision (MAP@K) gives insight into how relevant the list of recommended items are
     Cumulative sum: precision at k=1, at k=2, at k=3 ...
@@ -151,6 +90,85 @@ def MAP(is_relevant, relevant_items):
     map_score = np.sum(p_at_k) / np.min([relevant_items.shape[0], is_relevant.shape[0]])
 
     return map_score
+
+def compute_apk(y_true, y_pred, k):
+    """
+    average precision at k, y_pred is assumed 
+    to be truncated to length k prior to feeding
+    it to the function
+    """
+    # convert to set since membership 
+    # testing in a set is vastly faster
+    actual = set(y_true)
+    
+    # precision at i is a percentage of correct 
+    # items among first i recommendations; the
+    # correct count will be summed up by n_hit
+    n_hit = 0
+    precision = 0
+    for i, p in enumerate(y_pred, 1):
+        if p in actual:
+            n_hit += 1
+            precision += n_hit / i
+
+    # divide by recall at the very end
+    avg_precision = precision / min(len(actual), k)
+    return avg_precision
+
+''' 
+    RANKING METRICS used for top-N recommendation task. 
+    These metrics treat the recommendation list as a classification of relevant items. 
+'''
+def top_k_evaluation(test_R, Estimated_R, k): # , num_test_ratings, user_test_set, item_test_set, k=5)
+    """
+        mean average precision at rank k for the ALS model
+
+        Parameters
+        ----------
+        model : ALSWR instance
+            fitted ALSWR model
+
+        ratings : scipy sparse csr_matrix [n_users, n_items]
+            sparse matrix of user-item interactions
+
+        k : int
+            mean average precision at k's k
+            
+        Returns
+        -------
+        mapk : float
+            the mean average precision at k's score
+    """
+    MAP_k = 0.0
+    num_eval = 0
+
+    URM_test = sps.csr_matrix(test_R)
+
+    n_users = URM_test.shape[0]
+    
+    # print("MAP@", k)
+    for user_id in range(n_users):
+        # if user_id % 1000 == 0:
+        #     print("Evaluated user {} of {}".format(user_id, n_users))
+
+        start_pos = URM_test.indptr[user_id]
+        end_pos = URM_test.indptr[user_id + 1]
+
+        if end_pos-start_pos>0:
+            y_true = URM_test.indices[start_pos:end_pos]
+
+            if len(y_true) > 0:
+                # predicted ratings for user_id
+                u_pred = Estimated_R[user_id] 
+                # sort ratings and get top-k highest estimated ratings
+                y_pred = np.argsort(u_pred)[::-1][:k] 
+                num_eval += 1
+                MAP_k += compute_apk(y_true, y_pred, k)
+
+    MAP_k /= num_eval
+
+    return MAP_k
+
 
 def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,current_time,
                  args,model_name,data_name,hidden_neuron,random_seed,optimizer_method,lr):

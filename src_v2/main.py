@@ -27,11 +27,11 @@ parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default=
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_new')
+parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_old')
 
 # train/test fold for training
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
-parser.add_argument('--test_fold', type=int, default=2) # TODO: iterate all folds at once 
+parser.add_argument('--test_fold', type=int, default=0) # TODO: iterate all folds at once 
 
 # training epochs
 parser.add_argument('--train_epoch', type=int, default=100)

@@ -64,8 +64,8 @@ class CDAE():
         self.test_acc_list = []
         self.test_avg_loglike_list = []
 
-        # self.test_map_at_5_list = []
-        # self.test_map_at_10_list = []
+        self.test_map_at_5_list = []
+        self.test_map_at_10_list = []
 
         self.user_train_set = user_train_set
         self.item_train_set = item_train_set
@@ -176,6 +176,7 @@ class CDAE():
 
             batch_cost = batch_cost + Cost
         self.train_cost_list.append(batch_cost)
+        
         if itr % self.display_step == 0:
             print ("Training //", "Epoch %d //" % (itr), " Total cost = {:.2f}".format(batch_cost),
                    "Elapsed time : %d sec" % (time.time() - start_time))
@@ -185,6 +186,8 @@ class CDAE():
         mask_corruption_np = np.random.binomial(1, 1 - 0,
                                                 (self.num_users, self.num_items))
         batch_set_idx = np.arange(self.num_users)
+
+        # Use decoder (obtained by training) to estimate ratings
         Cost,Decoder = self.sess.run(
             [self.cost,self.Decoder],
             feed_dict={self.model_mask_corruption: mask_corruption_np,
@@ -193,17 +196,7 @@ class CDAE():
                        self.model_batch_data_idx: batch_set_idx})
 
         self.test_cost_list.append(Cost)
-        Estimated_R = Decoder.clip(min=0, max=1)
-
-        import pandas as pd
-
-        # print("Estimated_R", type(Estimated_R))
-        # self.test_R = np.array(self.test_R)
-        # Estimated_R = np.array(Estimated_R)
-        # dataset = pd.DataFrame([[self.test_R], [Estimated_R]])
-        # print(dataset)
-
-        # exit(0)
+        Estimated_R = Decoder.clip(min=0, max=1) # values smaller than 0 become 0, and values larger than 1 become 1
         
         # Error metrics
         RMSE, MAE, ACC, AVG_loglikelihood = evaluation(self.test_R, self.test_mask_R, 
@@ -215,20 +208,19 @@ class CDAE():
         self.test_avg_loglike_list.append(AVG_loglikelihood)
 
         # Ranking metrics
-        # MAP_at_5 = top_n_evaluation(self.test_R, recommender_object, at=5)
-        # self.test_map_at_5_list.append(MAP_at_5)
-        # self.test_map_at_10_list.append(MAP_at_10)
-    
+        MAP_at_5 = top_k_evaluation(self.test_R, Estimated_R, k=5)
+        MAP_at_10 = top_k_evaluation(self.test_R, Estimated_R, k=10)
+        
+        self.test_map_at_5_list.append(MAP_at_5)
+        self.test_map_at_10_list.append(MAP_at_10)
         
         if itr % self.display_step == 0:
             print("Testing //", "Epoch %d //" % (itr), " Total cost = {:.2f}".format(Cost),
                   "Elapsed time : %d sec" % (time.time() - start_time))
             print("RMSE = {:.4f}".format(RMSE), "MAE = {:.4f}".format(MAE), "ACC = {:.10f}".format(ACC),
                   "AVG Loglike = {:.4f}".format(AVG_loglikelihood))
+            print("MAP@5 = {:.4f}".format(MAP_at_5), "MAP@10 = {:.4f}".format(MAP_at_10))
             print("=" * 100)
-
-            # print("MAP_at_5 = {:.4f}".format(MAP_at_5)), "MAP_at_10 = {:.4f}".format(MAP_at_10))
-            # print("result_dict = ", MAP_at_5)
 
         # Check min_RMSE, patience, total_patiencep
         if RMSE <= self.min_RMSE:
@@ -250,19 +242,3 @@ class CDAE():
 
     def l2_norm(self,tensor):
         return tf.sqrt(tf.reduce_sum(input_tensor=tf.square(tensor)))
-    
-'''
-    Recommend: return items with the highest estimated ratings 
-    required by evaluation measure TOPN
-
-'''
-def recommend(self, user_id, at):
-    # compute the scores using the dot product
-    user_profile = self.R[user_id]
-    scores = user_profile.dot(self.W_sparse).toarray().ravel()
-
-    # sort ratings and return items with highest estimated ratings 
-    # rank items
-    ranking = scores.argsort()[::-1]
-
-    return ranking[:at]
