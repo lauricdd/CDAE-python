@@ -8,8 +8,10 @@ class CDAE():
     def __init__(self,sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,
                     R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,
-                    train_epoch,batch_size, lr, optimizer_method, display_step, random_seed,
+                    train_epoch,batch_size, lr, optimizer_method, 
+                    display_step, random_seed,
                     decay_epoch_step,lambda_value,
+                    user_train_set, item_train_set, user_test_set, item_test_set,
                     result_path,date,data_name,model_name,test_fold,corruption_level):
 
         self.sess = sess
@@ -27,12 +29,12 @@ class CDAE():
 
         self.current_time = current_time
 
-        self.R = R
+        self.R = R # URM
         self.mask_R = mask_R
         self.C = C
-        self.train_R = train_R
+        self.train_R = train_R  # URM_train
         self.train_mask_R = train_mask_R
-        self.test_R = test_R
+        self.test_R = test_R    # URM_test
         self.test_mask_R = test_mask_R
         self.num_train_ratings = num_train_ratings
         self.num_test_ratings = num_test_ratings
@@ -61,6 +63,14 @@ class CDAE():
         self.test_mae_list = []
         self.test_acc_list = []
         self.test_avg_loglike_list = []
+
+        # self.test_map_at_5_list = []
+        # self.test_map_at_10_list = []
+
+        self.user_train_set = user_train_set
+        self.item_train_set = item_train_set
+        self.user_test_set = user_test_set
+        self.item_test_set = item_test_set
 
         self.result_path = result_path
         self.date = date
@@ -91,8 +101,9 @@ class CDAE():
                 self.train_model(epoch_itr)
                 self.test_model(epoch_itr)
         
-        make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,self.current_time,
-                     self.args,self.model_name,self.data_name,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
+        make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,
+                    # self.test_map_at_5_list,self.test_map_at_10_list,
+                    self.current_time, self.args,self.model_name,self.data_name,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
     
     def prepare_model(self):
         self.model_mask_corruption = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_items])
@@ -183,17 +194,41 @@ class CDAE():
 
         self.test_cost_list.append(Cost)
         Estimated_R = Decoder.clip(min=0, max=1)
-        RMSE, MAE, ACC, AVG_loglikelihood = evaluation(self.test_R, self.test_mask_R, Estimated_R, self.num_test_ratings)
+
+        import pandas as pd
+
+        # print("Estimated_R", type(Estimated_R))
+        # self.test_R = np.array(self.test_R)
+        # Estimated_R = np.array(Estimated_R)
+        # dataset = pd.DataFrame([[self.test_R], [Estimated_R]])
+        # print(dataset)
+
+        # exit(0)
+        
+        # Error metrics
+        RMSE, MAE, ACC, AVG_loglikelihood = evaluation(self.test_R, self.test_mask_R, 
+                                                        Estimated_R, self.num_test_ratings)
+
         self.test_rmse_list.append(RMSE)
         self.test_mae_list.append(MAE)
         self.test_acc_list.append(ACC)
         self.test_avg_loglike_list.append(AVG_loglikelihood)
+
+        # Ranking metrics
+        # MAP_at_5 = top_n_evaluation(self.test_R, recommender_object, at=5)
+        # self.test_map_at_5_list.append(MAP_at_5)
+        # self.test_map_at_10_list.append(MAP_at_10)
+    
+        
         if itr % self.display_step == 0:
             print("Testing //", "Epoch %d //" % (itr), " Total cost = {:.2f}".format(Cost),
                   "Elapsed time : %d sec" % (time.time() - start_time))
             print("RMSE = {:.4f}".format(RMSE), "MAE = {:.4f}".format(MAE), "ACC = {:.10f}".format(ACC),
                   "AVG Loglike = {:.4f}".format(AVG_loglikelihood))
             print("=" * 100)
+
+            # print("MAP_at_5 = {:.4f}".format(MAP_at_5)), "MAP_at_10 = {:.4f}".format(MAP_at_10))
+            # print("result_dict = ", MAP_at_5)
 
         # Check min_RMSE, patience, total_patiencep
         if RMSE <= self.min_RMSE:
@@ -215,3 +250,19 @@ class CDAE():
 
     def l2_norm(self,tensor):
         return tf.sqrt(tf.reduce_sum(input_tensor=tf.square(tensor)))
+    
+'''
+    Recommend: return items with the highest estimated ratings 
+    required by evaluation measure TOPN
+
+'''
+def recommend(self, user_id, at):
+    # compute the scores using the dot product
+    user_profile = self.R[user_id]
+    scores = user_profile.dot(self.W_sparse).toarray().ravel()
+
+    # sort ratings and return items with highest estimated ratings 
+    # rank items
+    ranking = scores.argsort()[::-1]
+
+    return ranking[:at]

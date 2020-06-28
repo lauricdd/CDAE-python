@@ -42,14 +42,13 @@ class ItemSimilarityRecommender(BaseRecommender):
             dataset = fast_sparse_matrix(dataset)
        
         num_users, num_items = dataset.shape
-        # print("\nSLIM recommender fit ... num_users AFTER parsing", num_users)
-        # print("SLIM recommender fit ... num_items AFTER parsing", num_items)
+        print("\nSLIM recommender ... num_users: ", num_users)
+        print("SLIM recommender ... num_items: ", num_items)
 
         # build up a sparse similarity matrix
-        print("Building up a sparse similarity matrix ... \n")
+        print("Building up a sparse similarity matrix ...")
         start_time = time.time()
         start_time_printBatch = start_time
-
 
         ##########################    
         # Select topK values
@@ -58,7 +57,6 @@ class ItemSimilarityRecommender(BaseRecommender):
         # - Sort only the relevant items
         # - Get the original item index
         ##########################
-        
 
         data = []
         row = []
@@ -67,7 +65,6 @@ class ItemSimilarityRecommender(BaseRecommender):
         # fit each item's factors sequentially (not in parallel)
         for j in range(num_items): # j is the current item
             w = self.compute_similarities(dataset,j)
-            
             for k,v in enumerate(w):
                 if v != 0:
                     data.append(v)

@@ -23,7 +23,7 @@ current_time = time.time()
 #TODO: use easydict
 
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
-parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='SLIMElasticNet')
+parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
@@ -31,7 +31,7 @@ parser.add_argument('--data_name', choices=['politic_old','politic_new','moviele
 
 # train/test fold for training
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
-parser.add_argument('--test_fold', type=int, default=1) # TODO: iterate all folds at once 
+parser.add_argument('--test_fold', type=int, default=2) # TODO: iterate all folds at once 
 
 # training epochs
 parser.add_argument('--train_epoch', type=int, default=100)
@@ -42,11 +42,11 @@ parser.add_argument('--lr', type=float, default=1e-3)
 
 # gradient-based optimization algorithms
 parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','RMSProp', \
-                    'GradientDescent','Momentum'],default='Adam')
+                    'GradientDescent','Momentum'], default='Adam')
 
 # dropout: keep_prob to specify the fraction of the input units to keep while training 
-# NOTE: setting keep_prob to exactly 1.0, this means the probability of dropping any node becomes 0
-parser.add_argument('--keep_prob', type=float, default=0.0) 
+# setting keep_prob to exactly 1.0, this means the probability of dropping any node becomes 0
+parser.add_argument('--keep_prob', type=float, default=1.0) 
 
 # gradient clipping: prevent exploding gradients
 parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')
@@ -215,18 +215,18 @@ date = "0203"
 result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold) +  '/' + str(current_time)+"/"
 
 # read ratings file and train/test split
-R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings \
+R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,\
+user_train_set,item_train_set,user_test_set,item_test_set \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
-
 
 # model params
 # print("model arguments:\n", args, end="\n")
-model_string = "\nType of Model: {}, \nDataset: {}, \nTest fold: {}, \nHidden neurons: {} \n".format(
-    model_name,
-    data_name,
-    test_fold,
-    hidden_neuron
-)
+model_string = "\nType of model: {}, \nDataset: {}, \nTest fold: {}, \nHidden neurons: {} \n".format(
+        model_name,
+        data_name,
+        test_fold,
+        hidden_neuron
+    )
 print(model_string)
 
 ''' Launch the evaluation graph in a session '''
@@ -257,6 +257,7 @@ with tf.compat.v1.Session() as sess:
                     R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,
                     train_epoch,batch_size, lr, optimizer_method, display_step, random_seed,
                     decay_epoch_step,lambda_value,
+                    user_train_set, item_train_set, user_test_set, item_test_set,
                     result_path,date,data_name,model_name,test_fold,corruption_level) 
                     
         # train and test the model
@@ -272,6 +273,12 @@ with tf.compat.v1.Session() as sess:
         model = SLIM(l1_reg=args.l1_reg,l2_reg=args.l2_reg,model=args.learner)
         print(model)
         model.fit(R)
+
+        # self.test_model(epoch_itr)
+        # evaluate_algorithm(URM_test, recommender)
+        
+        # make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,self.current_time,
+        #              self.args,self.model_name,self.data_name,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
 
     else:
         raise NotImplementedError("ERROR")

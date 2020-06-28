@@ -10,13 +10,14 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from tensorflow.contrib.layers import batch_norm
 import functools
+import scipy.sparse as sps
+
 
 def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
+
     '''  
-        Error metrics:
-        compare predicted rating values (Estimated_R) with 
-        observed values (ratings in the test set (test_R))
-        num_test_ratings = number of observations (N)
+        ERROR METRICS used for rating prediction task. Compare predicted rating values (Estimated_R) 
+        with observed values (ratings in the test set (test_R)) num_test_ratings = number of observations (N)
     '''
 
     ''' 
@@ -35,16 +36,6 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
     numerator = np.sum(np.abs(pre_numeartor))
     MAE = numerator / float(num_test_ratings)
 
-    ''' 
-        Accuracy = 
-    '''
-    pre_numerator1 = np.sign(Estimated_R - 0.5)
-    tmp_test_R = np.sign(test_R - 0.5)
-
-    pre_numerator2 = np.multiply((pre_numerator1 == tmp_test_R), test_mask_R)
-    numerator = np.sum(pre_numerator2)
-    ACC = numerator / float(num_test_ratings)
-
     '''
         Negative Average Log-Likelihood (NALL)
         loss=-log(y)
@@ -60,28 +51,106 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
     numerator = np.sum(tmp_r)
     AVG_loglikelihood = numerator / float(num_test_ratings)
 
-    return RMSE,MAE,ACC,AVG_loglikelihood
 
-# def top_n_evaluation():
-    ''' top-N metrics over recommendation lists '''
-    ''' These metrics treat the recommendation list as a classification of relevant items. '''
-    ''' Mean Average Precision (MAP@K) gives insight into how relevant the list of recommended items are '''
-    
-    # Cumulative sum: precision at k=1, at k=2, at k=3 ...
-    # Average Precision, which applies to a single data point (like a single user). 
+    ''' 
+        RANKING METRICS used for top-N recommendation task. 
+        These metrics treat the recommendation list as a classification of relevant items. 
+    '''
 
-    # is_relevant = np.in1d(recommended_items, relevant_items, assume_unique=True)
+    ''' 
+        Accuracy 
+    '''
+    pre_numerator1 = np.sign(Estimated_R - 0.5)
+    tmp_test_R = np.sign(test_R - 0.5)
+
+    pre_numerator2 = np.multiply((pre_numerator1 == tmp_test_R), test_mask_R)
+    numerator = np.sum(pre_numerator2)
+    ACC = numerator / float(num_test_ratings)
+
+    '''
+        MAP@k (Mean Average Precision at k) .
+    '''
+    at=5
+
+    cumulative_MAP = 0.0
+    num_eval = 0
+
+    URM_test = sps.csr_matrix(test_R)
+
+    n_users = URM_test.shape[0]
+
+    for user_id in range(n_users):
+
+        if user_id % 1000 == 0:
+            print("Evaluated user {} of {}".format(user_id, n_users))
+
+        start_pos = URM_test.indptr[user_id]
+        end_pos = URM_test.indptr[user_id + 1]
+
+        if end_pos-start_pos>0:
+
+            relevant_items = URM_test.indices[start_pos:end_pos]
+
+            if len(relevant_items) > 0:
+                # recommended_items = recommender_object.recommend(user_id, at=at)
+                num_eval+=1
+
+                is_relevant = get_is_relevant(recommended_items, relevant_items)
+                cumulative_MAP += MAP(is_relevant, relevant_items)
+
+    cumulative_MAP /= num_eval
+
+    # print("Recommender performance is: Precision = {:.4f}, Recall = {:.4f}, MAP = {:.4f}".format(
+    #     cumulative_precision, cumulative_recall, cumulative_MAP))
+
+    # result_dict = {
+    #     "precision": cumulative_precision,
+    #     "recall": cumulative_recall,
+    #     "MAP": cumulative_MAP,
+    # }
+
+    # return result_dict
+
+    print("cumulative_MAP", cumulative_MAP)
+
+    return RMSE, MAE, AVG_loglikelihood, ACC
 
 
-    # Average precision up to the Kth item (it applies to a single data point)
-    # p_at_k = is_relevant * np.cumsum(is_relevant, dtype=np.float32) / (1 + np.arange(is_relevant.shape[0]))
 
-    # AP@K rel(k) is just an indicator that says whether that kth item was relevant (rel(k)=1) or not (rel(k)=0). I'd like to point out that instead of recommending N items would could have recommended,
-    # AP@N=1m∑k=1N(P(k) if kth item was relevant)
+''' 
+    Get test set relevant items for a given user
+'''
+def get_relevant_items(user_id, URM_test):
+    relevant_items = URM_test[user_id].indices
+
+    return relevant_items
+
+'''
+    Check whether recommended items are relevant
+'''
+def get_is_relevant(recommended_items, relevant_items):
+    is_relevant = np.in1d(recommended_items, relevant_items, assume_unique=True) # compare elements in both arrays
+
+    return is_relevant
+
+
+    recall_score = np.sum(is_relevant, dtype=np.float32) / relevant_items.shape[0]
+
+    return recall_score
+
+'''
+    Mean Average Precision (MAP@K) gives insight into how relevant the list of recommended items are
+    Cumulative sum: precision at k=1, at k=2, at k=3 ...
+'''
+def MAP(is_relevant, relevant_items):
     # MAP@K to average the AP@N metric over all your |U| users. 
-    # map_score = np.sum(p_at_k) / np.min([relevant_items.shape[0], is_relevant.shape[0]])
+    # rel(k) is just an indicator that says whether that kth item was relevant
+    p_at_k = is_relevant * np.cumsum(is_relevant, dtype=np.float32) / (1 + np.arange(is_relevant.shape[0]))
 
-    # return map_score
+    # sum(ratings of recommended items)/N recommended items
+    map_score = np.sum(p_at_k) / np.min([relevant_items.shape[0], is_relevant.shape[0]])
+
+    return map_score
 
 def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,current_time,
                  args,model_name,data_name,hidden_neuron,random_seed,optimizer_method,lr):
@@ -238,8 +307,8 @@ def SDAE_calculate(model_name,X_c, layer_structure, W, b, batch_normalization, f
         
         # fraction of the activations coming from g_act that will be disactivated (dropped)
         if itr1 < len(layer_structure) - 2: # add dropout except final layer. 
-            # hidden_value = tf.nn.dropout(hidden_value, rate=1 - (model_keep_prob))
-            hidden_value = tf.nn.dropout(hidden_value, 1 - (model_keep_prob))
+            # hidden_value = tf.nn.dropout(hidden_value, 1 - (model_keep_prob))
+            hidden_value = tf.nn.dropout(hidden_value, model_keep_prob)
         
         if itr1 == int(len(layer_structure) / 2) - 1:
             Encoded_X = hidden_value
