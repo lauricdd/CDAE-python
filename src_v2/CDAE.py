@@ -12,7 +12,7 @@ class CDAE():
                     display_step, random_seed,
                     decay_epoch_step,lambda_value,
                     user_train_set, item_train_set, user_test_set, item_test_set,
-                    result_path,date,data_name,model_name,test_fold,corruption_level):
+                    result_path,data_name,model_name,test_fold,corruption_level):
 
         self.sess = sess
         self.args = args
@@ -73,7 +73,6 @@ class CDAE():
         self.item_test_set = item_test_set
 
         self.result_path = result_path
-        self.date = date
         self.data_name = data_name
 
         self.model_name = model_name
@@ -100,11 +99,11 @@ class CDAE():
             else:
                 self.train_model(epoch_itr)
                 self.test_model(epoch_itr)
-        
+
         make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,
-                    # self.test_map_at_5_list,self.test_map_at_10_list,
+                    self.test_map_at_5_list,self.test_map_at_10_list,
                     self.current_time, self.args,self.model_name,self.data_name,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
-    
+
     def prepare_model(self):
         self.model_mask_corruption = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_items])
         self.input_R = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_items], name="input_R")

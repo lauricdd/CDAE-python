@@ -11,12 +11,13 @@ import matplotlib.pyplot as plt
 from tensorflow.contrib.layers import batch_norm
 import functools
 import scipy.sparse as sps
+import pandas as pd
 
 '''  
     ERROR METRICS used for rating prediction task. Compare predicted rating values (Estimated_R) 
     with observed values (ratings in the test set (test_R)) num_test_ratings = number of observations (N)
 '''
-def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
+def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings): 
     ''' 
         Root-Mean-Square Error 
         RMSE = sqrt(sum(Pi – Oi)^2 * 1/N)
@@ -29,8 +30,8 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
         Mean Absolute Error
         MAE = 1/N * sum(Pi – Oi)
     '''
-    pre_numeartor = np.multiply((test_R - Estimated_R), test_mask_R)
-    numerator = np.sum(np.abs(pre_numeartor))
+    pre_numerator = np.multiply((test_R - Estimated_R), test_mask_R)
+    numerator = np.sum(np.abs(pre_numerator))
     MAE = numerator / float(num_test_ratings)
 
     ''' 
@@ -58,8 +59,7 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
     numerator = np.sum(tmp_r)
     AVG_loglikelihood = numerator / float(num_test_ratings)
 
-    return RMSE, MAE, AVG_loglikelihood, ACC
-
+    return RMSE, MAE, ACC, AVG_loglikelihood
 
 ''' 
     Get test set relevant items for a given user
@@ -170,101 +170,103 @@ def top_k_evaluation(test_R, Estimated_R, k): # , num_test_ratings, user_test_se
     return MAP_k
 
 
-def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,current_time,
-                 args,model_name,data_name,hidden_neuron,random_seed,optimizer_method,lr):
+def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,
+                 test_map_at_5_list,test_map_at_10_list,
+                 current_time, args,model_name,data_name,hidden_neuron,random_seed,optimizer_method,lr):
 
     if not os.path.exists(result_path):
         os.makedirs(result_path)
 
-    overview = '../results/' + 'overview.txt'
-    basic_info = result_path + "basic_info.txt"
-    test_record = result_path + "test_record.txt"
+    ##########################################################
 
-    with open(test_record, 'w') as g:
+    model_info = result_path + 'model_params.txt'
 
-        g.write(str("ACC:"))
-        g.write('\t')
-        for itr in range(len(test_acc_list)):
-            g.write(str(test_acc_list[itr]))
-            g.write('\t')
-        g.write('\n')
+    model_params_dict = {
+        'data_name': data_name,
+        'test_fold': args.test_fold,
+        'model_name': model_name,
+    }
 
-        g.write(str("RMSE:"))
-        g.write('\t')
-        for itr in range(len(test_rmse_list)):
-            g.write(str(test_rmse_list[itr]))
-            g.write('\t')
-        g.write('\n')
+    if(model_name == 'CDAE'):
+        model_params_dict.update({
+            'train_epoch': args.train_epoch,
+            'lr': args.lr,
+            'optimizer_method': args.optimizer_method,
+            'keep_prob': args.keep_prob,
+            'grad_clip': args.grad_clip,
+            'batch_normalization': args.batch_normalization,
+            'hidden_neuron': args.hidden_neuron,
+            'corruption_level': args.corruption_level,
+            'lambda_value': args.lambda_value,
+            'f_act': args.f_act,
+            'g_act': args.g_act,
+            'encoder_method': args.encoder_method
+        })
 
-        g.write(str("MAE:"))
-        g.write('\t')
-        for itr in range(len(test_mae_list)):
-            g.write(str(test_mae_list[itr]))
-            g.write('\t')
-        g.write('\n')
+    elif(model_name == 'SLIMElasticNet'):
+        model_params_dict.update({
+            'l1_reg': args.l1_reg,
+            'l2_reg': args.l2_reg,
+            'learner': args.learner
+        })
 
-        g.write(str("AVG Likelihood:"))
-        g.write('\t')
-        for itr in range(len(test_avg_loglike_list)):
-            g.write(str(test_avg_loglike_list[itr]))
-            g.write('\t')
-        g.write('\n')
+    with open(model_info, 'a') as f:
+        for k,v in model_params_dict.items():
+            s = str(k) + "   " + str(v) + "\n"
+            f.write(s)
 
-    with open(basic_info, 'w') as h:
-        h.write(str(args))
+    # with open(model_info, 'a') as f:
+    #     for arg in vars(args): # parser.parse_args() variables
+    #         s = str(arg) + "   " + str(getattr(args, arg)) + "\n"
+    #         f.write(s)
+    
+    ##########################################################
+    
+    # evaluation metrics (on text_fold) by epoch
+    test_record = result_path + 'test_record.txt'
 
-    with open(overview, 'a') as f:
-        f.write(str(data_name))
-        f.write('\t')
-        f.write(str(model_name))
-        f.write('\t')
-        f.write(str(current_time))
-        f.write('\t')
-        f.write(str(test_rmse_list[-1]))
-        f.write('\t')
-        f.write(str(test_mae_list[-1]))
-        f.write('\t')
-        f.write(str(test_acc_list[-1]))
-        f.write('\t')
-        f.write(str(test_avg_loglike_list[-1]))
-        f.write('\t')
-        f.write(str(hidden_neuron))
-        f.write('\t')
-        f.write(str(args.corruption_level))
-        f.write('\t')
-        f.write(str(args.lambda_value))
-        f.write('\t')
-        f.write(str(args.f_act))
-        f.write('\t')
-        f.write(str(args.g_act))
-        f.write('\n')
+    test_record_df = pd.DataFrame({
+        'RMSE': test_rmse_list,
+        'MAE': test_mae_list,
+        'ACC': test_acc_list,
+        'NALL': test_avg_loglike_list,
+        'MAP@5': test_map_at_5_list,
+        'MAP@10': test_map_at_10_list
+    })
 
-    Test = plt.plot(test_acc_list, label='Test')
+    test_record_df.index.name = 'Epoch'
+
+    trfile = open(test_record, 'a')
+    trfile.write(test_record_df.to_string())
+    trfile.close()
+
+    ##########################################################
+
+    plots_dir = result_path + 'plots/'
+    os.makedirs(plots_dir)
+
+    print("Plotting error metrics.....")
+
+    plt.plot(test_acc_list, label="ACC")
+    plt.plot(test_rmse_list, label="RMSE")  
+    plt.plot(test_mae_list, label="MAE")  
+    plt.plot(test_avg_loglike_list, label="NALL")  
+
     plt.xlabel('Epochs')
-    plt.ylabel('ACC')
+    plt.ylabel('Test evaluation metrics')
     plt.legend()
-    plt.savefig(result_path + "ACC.png")
+    plt.savefig(plots_dir + "test_evaluation.png")
     plt.clf()
 
-    Test = plt.plot(test_rmse_list, label='Test')
-    plt.xlabel('Epochs')
-    plt.ylabel('RMSE')
-    plt.legend()
-    plt.savefig(result_path + "RMSE.png")
-    plt.clf()
+    print("Plotting ranking metrics.....")
 
-    Test = plt.plot(test_mae_list, label='Test')
-    plt.xlabel('Epochs')
-    plt.ylabel('MAE')
-    plt.legend()
-    plt.savefig(result_path + "MAE.png")
-    plt.clf()
+    plt.plot(test_map_at_5_list, label="MAP@5")
+    plt.plot(test_map_at_10_list, label="MAP@10")   
 
-    Test = plt.plot(test_avg_loglike_list, label='Test')
     plt.xlabel('Epochs')
-    plt.ylabel('Test AVG likelihood')
+    plt.ylabel('MAP')
     plt.legend()
-    plt.savefig(result_path + "AVG.png")
+    plt.savefig(plots_dir + "test_top_k_evaluation.png")
     plt.clf()
 
 def variable_save(result_path,model_name,train_var_list1,train_var_list2,Estimated_R,test_v_ud,mask_test_v_ud):
@@ -326,7 +328,7 @@ def SDAE_calculate(model_name,X_c, layer_structure, W, b, batch_normalization, f
         # fraction of the activations coming from g_act that will be disactivated (dropped)
         if itr1 < len(layer_structure) - 2: # add dropout except final layer. 
             # hidden_value = tf.nn.dropout(hidden_value, 1 - (model_keep_prob))
-            hidden_value = tf.nn.dropout(hidden_value, model_keep_prob)
+            hidden_value = tf.nn.dropout(hidden_value, rate = (1 - model_keep_prob))
         
         if itr1 == int(len(layer_structure) / 2) - 1:
             Encoded_X = hidden_value

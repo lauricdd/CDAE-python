@@ -27,7 +27,7 @@ parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default=
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old','politic_new','movielens_10m'], default='politic_old')
+parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m'], default='politic_new')
 
 # train/test fold for training
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
@@ -117,7 +117,6 @@ print("Loading", data_name, "data ... ", end="\n")
 
 # politic_new and politic_old 
 # User IDs are in ranges from 1 to 1537-1
-# and Bill IDs
 
 if data_name == 'politic_new': # Politic2016
     num_users = 1537 
@@ -211,7 +210,6 @@ else:
     raise NotImplementedError("ERROR")
 
 
-date = "0203"
 result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold) +  '/' + str(current_time)+"/"
 
 # read ratings file and train/test split
@@ -252,23 +250,49 @@ with tf.compat.v1.Session() as sess:
 
             # get initial weights using do_pretrain??
 
-        model = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
+        cdae_model = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,
                     R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,
                     train_epoch,batch_size, lr, optimizer_method, display_step, random_seed,
                     decay_epoch_step,lambda_value,
                     user_train_set, item_train_set, user_test_set, item_test_set,
-                    result_path,date,data_name,model_name,test_fold,corruption_level) 
+                    result_path,data_name,model_name,test_fold,corruption_level) 
                     
         # train and test the model
-        model.run()
+        cdae_model.run()
 
     
     # Machine learning approach to Item-based CF
     # Sparse LInear Method
 
     elif model_name == "SLIMElasticNet":      
-        # TODO: apply_hyperparams_tuning?
+        
+        apply_hyperparams_tuning = True
+
+#         regr = ElasticNetCV(cv=5, random_state=0)
+    # regr.fit(X, y)
+    # ElasticNetCV(cv=5, random_state=0)
+    # >>> print(regr.alpha_)
+    # 0.199...
+    # >>> print(regr.intercept_)
+    # 0.398...
+    # >>> print(regr.predict([[0, 0]]))
+    # [0.398...]
+
+        exit(0)
+
+        # Model specific cross-validation
+        # Elastic Net model with iterative fitting along a regularization path
+
+
+        # SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
+
+        # if apply_hyperparams_tuning:
+        #     best_parameters_SLIMElasticNet = hyperparams_tuning(SLIMElasticNetRecommender)
+        # else:
+        #     best_parameters_SLIMElasticNet = best_parameters_list["SLIMElasticNetRecommender"]
+
+        # SLIMElasticNet.fit(**best_parameters_SLIMElasticNet)
 
         model = SLIM(l1_reg=args.l1_reg,l2_reg=args.l2_reg,model=args.learner)
         print(model)
@@ -282,3 +306,48 @@ with tf.compat.v1.Session() as sess:
 
     else:
         raise NotImplementedError("ERROR")
+
+
+# def hyperparams_tuning(recommender_class):
+
+#     metric_to_optimize = "MAP"
+
+#     evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[cutoff])
+#     # evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[cutoff, cutoff + 5])
+#     evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[cutoff])
+#     evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[cutoff], exclude_seen=False)
+
+#     output_folder_path = "result_experiments/"
+
+#     # # If directory does not exist, create
+#     cwd = os.getcwd()
+#     if not os.path.exists(os.path.join(cwd, output_folder_path)):
+#         os.makedirs(output_folder_path)
+
+#     n_cases = 8  # 2
+#     n_random_starts = 5  # int(n_cases / 3)
+
+#     save_model = "no"
+#     allow_weighting = True  # provides better results
+#     similarity_type_list = ["cosine"]
+#     similarity_type = similarity_type_list[0]  # KNN Recommenders on similarity_type
+
+#     output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
+    
+#     try:
+#         runParameterSearch_Collaborative(recommender_class=recommender_class,
+#                                             URM_train=URM_train,
+#                                             metric_to_optimize=metric_to_optimize,
+#                                             evaluator_validation=evaluator_validation,
+#                                             evaluator_test=evaluator_test,
+#                                             evaluator_validation_earlystopping=evaluator_validation_earlystopping,
+#                                             output_folder_path=output_folder_path,
+#                                             n_cases=n_cases,
+#                                             n_random_starts=n_random_starts,
+#                                             save_model=save_model,
+#                                             allow_weighting=allow_weighting,
+#                                             similarity_type_list=similarity_type_list)
+
+#     except Exception as e:
+#         print("On recommender {} Exception {}".format(recommender_class, str(e)))
+#         traceback.print_exc()
