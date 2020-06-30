@@ -13,7 +13,10 @@ from recommenders.SLIM import SLIM
 import warnings
 warnings.filterwarnings('ignore')
 
-current_time = time.time()
+# current_time = time.time()
+named_tuple = time.localtime() # get struct_time
+current_time = time.strftime("%m%d%Y_%H:%M:%S", named_tuple)
+
 
 
 # ------------------------------------------------------------------ #
@@ -58,14 +61,14 @@ parser.add_argument('--batch_normalization', choices=['True','False'], default =
 parser.add_argument('--hidden_neuron', type=int, default=50)
 
 # input corruption 
-parser.add_argument('--corruption_level', type=float, default=0.3)
+parser.add_argument('--corruption_level', type=float, default=0.0)
 
 # regularization rate
 parser.add_argument('--lambda_value', type=float, default=0.001)
 
 # activation functions
-parser.add_argument('--f_act', choices=['Sigmoid','Relu','Elu','Tanh','Identity'], default = 'Sigmoid')
-parser.add_argument('--g_act', choices=['Sigmoid','Relu','Elu','Tanh','Identity'], default = 'Sigmoid')
+parser.add_argument('--f_act', choices=['Sigmoid','Relu','Elu','Tanh','Identity'], default = 'Identity')
+parser.add_argument('--g_act', choices=['Sigmoid','Relu','Elu','Tanh','Identity'], default = 'Identity')
 
 # for reading ratings file
 parser.add_argument('--a', type=float, default=1)
@@ -84,7 +87,6 @@ parser.add_argument('--l1_reg', type=float, default = 0.001)
 parser.add_argument('--l2_reg', type=float, default = 0.0001)
 # underlying learner for SLIM learner
 parser.add_argument('--learner', choices=['sgd','elasticnet','fs_sgd'], default = 'elasticnet')
-
 
 args = parser.parse_args()
 
@@ -127,21 +129,6 @@ elif data_name == 'politic_old': # Politic2013
     num_users = 1540
     num_items = 7162
     num_total_ratings = 2779703
-
-    # df2 = pd.read_csv("../data/politic_old/Test_ratings_fold_0" ,sep = "\t")
-
-    # print("df2\n", df2.count()) 
-    ## df2
-    #  835     555939
-    # 4554    555939
-    # 1       555939
-    # dtype: int64
-
-    # num_users = df2[2].nunique()
-    # num_total_ratings =  df2.shape[0]
-
-    # print("num_users", num_users)
-    # print("num_total_ratings", num_total_ratings)
 
 elif data_name == 'movielens_10m': 
     
@@ -227,6 +214,7 @@ model_string = "\nType of model: {}, \nDataset: {}, \nTest fold: {}, \nHidden ne
     )
 print(model_string)
 
+
 ''' Launch the evaluation graph in a session '''
 with tf.compat.v1.Session() as sess:
    
@@ -301,8 +289,8 @@ with tf.compat.v1.Session() as sess:
         # self.test_model(epoch_itr)
         # evaluate_algorithm(URM_test, recommender)
         
-        # make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,self.current_time,
-        #              self.args,self.model_name,self.data_name,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
+        # make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,
+        #               test_map_at_5_list,test_map_at_10_list, current_time, args)
 
     else:
         raise NotImplementedError("ERROR")

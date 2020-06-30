@@ -46,7 +46,7 @@ class CDAE():
         self.lr = lr
         self.optimizer_method = optimizer_method
         self.display_step = display_step
-        self.random_seed = random_seed
+        self.random_seed = random_seed #TODO: is it random seed necessary?
 
         self.f_act = f_act
         self.g_act = g_act
@@ -101,8 +101,7 @@ class CDAE():
                 self.test_model(epoch_itr)
 
         make_records(self.result_path,self.test_acc_list,self.test_rmse_list,self.test_mae_list,self.test_avg_loglike_list,
-                    self.test_map_at_5_list,self.test_map_at_10_list,
-                    self.current_time, self.args,self.model_name,self.data_name,self.hidden_neuron,self.random_seed,self.optimizer_method,self.lr)
+                    self.test_map_at_5_list,self.test_map_at_10_list, self.current_time, self.args)
 
     def prepare_model(self):
         self.model_mask_corruption = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.num_items])

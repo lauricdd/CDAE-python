@@ -171,8 +171,7 @@ def top_k_evaluation(test_R, Estimated_R, k): # , num_test_ratings, user_test_se
 
 
 def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,
-                 test_map_at_5_list,test_map_at_10_list,
-                 current_time, args,model_name,data_name,hidden_neuron,random_seed,optimizer_method,lr):
+                 test_map_at_5_list,test_map_at_10_list, current_time, args):
 
     if not os.path.exists(result_path):
         os.makedirs(result_path)
@@ -182,12 +181,12 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
     model_info = result_path + 'model_params.txt'
 
     model_params_dict = {
-        'data_name': data_name,
+        'data_name': args.data_name,
         'test_fold': args.test_fold,
-        'model_name': model_name,
+        'model_name': args.model_name,
     }
 
-    if(model_name == 'CDAE'):
+    if(args.model_name == 'CDAE'):
         model_params_dict.update({
             'train_epoch': args.train_epoch,
             'lr': args.lr,
@@ -203,7 +202,7 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
             'encoder_method': args.encoder_method
         })
 
-    elif(model_name == 'SLIMElasticNet'):
+    elif(args.model_name == 'SLIMElasticNet'):
         model_params_dict.update({
             'l1_reg': args.l1_reg,
             'l2_reg': args.l2_reg,
