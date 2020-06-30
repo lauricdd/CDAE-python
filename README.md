@@ -32,6 +32,10 @@ Open source code tensorflow v2.0
 
     cd src_v2
     
+Install virtualenv using pip3 
+
+    sudo apt-get install python3-venv
+
 Create virtual environment (env)
 
     python3 -m venv env  
@@ -48,6 +52,6 @@ Run main file
 
     python3 main.py     
  
- To leave the virtualenv
+To leave the virtualenv
    
     deactivate
