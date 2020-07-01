@@ -66,6 +66,9 @@ class SLIM(ItemSimilarityRecommender):
         :elasticnet: ElasticNet
         :fs_sgd: NNFeatureSelectingSGDRegressor
     """
+    
+    RECOMMENDER_NAME = "SLIMElasticNetRecommender"
+
     def __init__(self,
                  l1_reg=0.001,
                  l2_reg=0.0001,

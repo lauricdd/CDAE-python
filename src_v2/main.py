@@ -9,7 +9,8 @@ from CDAE import CDAE
 from DAE import DAE
 from recommenders.SLIM import SLIM
 
-# Ignore warning TODO: check warnings
+# Ignore warning 
+# TODO: check warnings
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -26,11 +27,11 @@ current_time = time.strftime("%m%d%Y_%H:%M:%S", named_tuple)
 #TODO: use easydict
 
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
-parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='CDAE')
+parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='SLIMElasticNet')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m'], default='politic_new')
+parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m'], default='politic_old')
 
 # train/test fold for training
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
@@ -214,6 +215,126 @@ model_string = "\nType of model: {}, \nDataset: {}, \nTest fold: {}, \nHidden ne
     )
 print(model_string)
 
+# Matrix Compressed Sparse Row format
+# -----------------------------------
+import scipy.sparse as sps
+def csr_sparse_matrix(data, row, col, shape=None):
+    csr_matrix = sps.coo_matrix((data, (row, col)), shape=shape)
+    csr_matrix = csr_matrix.tocsr()
+
+    return csr_matrix
+
+
+# Random holdout split: take interactions randomly
+# and do not care about which users were involved in that interaction
+def split_train_validation_random_holdout(URM, train_split):
+    URM = sps.csr_matrix(URM) 
+
+    number_interactions = URM.nnz  # number of nonzero values
+    URM = URM.tocoo()  # Coordinate list matrix (COO)
+    shape = URM.shape
+
+    #  URM.row: user_list, URM.col: item_list, URM.data: rating_list
+
+    # Sampling strategy: take random samples of data using a boolean mask
+    train_mask = np.random.choice(
+        [True, False],
+        number_interactions,
+        p=[train_split, 1 - train_split])  # train_perc for True, 1-train_perc for False
+
+    URM_train = csr_sparse_matrix(URM.data[train_mask],
+                                  URM.row[train_mask],
+                                  URM.col[train_mask],
+                                  shape=shape)
+
+    test_mask = np.logical_not(train_mask)  # remaining samples
+    URM_test = csr_sparse_matrix(URM.data[test_mask],
+                                 URM.row[test_mask],
+                                 URM.col[test_mask],
+                                 shape=shape)
+
+    return URM_train, URM_test
+
+
+# Hyper-parameters tuning: Bayesian Optimization Approach
+def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
+
+    from utils.Evaluation.Evaluator import EvaluatorHoldout
+
+    # Step 1: Import the evaluator objects
+    print("Evaluator objects ... ")
+    evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[5])
+    evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
+    # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5, 10])
+    
+    # Step 2: Create BayesianSearch object
+    print("BayesianSearch objects ... ")
+
+    from utils.ParameterTuning.SearchBayesianSkopt import SearchBayesianSkopt
+    
+    parameterSearch = SearchBayesianSkopt(recommender_class,
+                                         evaluator_validation=evaluator_validation,
+                                         evaluator_test=evaluator_test)
+    
+    # Step 3: Define parameters range   
+    print("Parameters range ...") 
+    from skopt.space import Real, Integer, Categorical
+    from utils.ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
+
+    hyperparameters_range_dictionary = {}
+    hyperparameters_range_dictionary["topK"] = Integer(5, 1000)
+    hyperparameters_range_dictionary["l1_ratio"] = Real(low=1e-5, high=1.0, prior='log-uniform')
+    hyperparameters_range_dictionary["alpha"] = Real(low=1e-3, high=1.0, prior='uniform')
+
+    recommender_input_args = SearchInputRecommenderArgs(
+        CONSTRUCTOR_POSITIONAL_ARGS=[URM_train],
+        CONSTRUCTOR_KEYWORD_ARGS={},
+        FIT_POSITIONAL_ARGS=[],
+        FIT_KEYWORD_ARGS={}
+    )
+    
+    output_folder_path = "result_experiments/"
+    
+    # If directory does not exist, create
+    if not os.path.exists(output_folder_path):
+        os.makedirs(output_folder_path)
+    
+    # # Step 4: run
+
+    n_cases = 2
+    metric_to_optimize = "MAP"
+    output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
+
+    best_parameters = parameterSearch.search(recommender_input_args, # the function to minimize
+                                                parameter_search_space=hyperparameters_range_dictionary, # the bounds on each dimension of x
+                                                n_cases=n_cases,   # the number of evaluations of f
+                                                n_random_starts=1, # the number of random initialization points
+                                                #n_random_starts = int(n_cases/3),
+                                                save_model="no",
+                                                output_folder_path=output_folder_path,
+                                                output_file_name_root=output_file_name_root,
+                                                metric_to_optimize=metric_to_optimize
+                                            )
+                                
+    print("best_parameters", best_parameters)
+
+    # # Step 5: return best_parameters
+    # # from utils.DataIO import DataIO
+    # # data_loader = DataIO(folder_path=output_folder_path)
+    # # search_metadata = data_loader.load_data(recommender_class.RECOMMENDER_NAME + "_metadata.zip")
+    # # print("search_metadata", search_metadata)
+    
+    # best_parameters = search_metadata["hyperparameters_best"]
+
+    return best_parameters
+
+
+# Best hyperparameters found by tuning (by dataset)
+# -------------------------------------------------
+
+SLIMElasticNet_best_parameters_list = {
+    'politic_old': {'topK': 1000, 'l1_ratio': 1e-05, 'alpha': 0.001},
+}
 
 ''' Launch the evaluation graph in a session '''
 with tf.compat.v1.Session() as sess:
@@ -255,36 +376,40 @@ with tf.compat.v1.Session() as sess:
 
     elif model_name == "SLIMElasticNet":      
         
-        apply_hyperparams_tuning = True
-
-#         regr = ElasticNetCV(cv=5, random_state=0)
-    # regr.fit(X, y)
-    # ElasticNetCV(cv=5, random_state=0)
-    # >>> print(regr.alpha_)
-    # 0.199...
-    # >>> print(regr.intercept_)
-    # 0.398...
-    # >>> print(regr.predict([[0, 0]]))
-    # [0.398...]
-
-        exit(0)
-
         # Model specific cross-validation
         # Elastic Net model with iterative fitting along a regularization path
 
+        print("Splitting ... ")
+        from sklearn.model_selection import train_test_split
 
-        # SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
+        # Split dataset into train, validation and test with 0.6, 0.2, 0.2
+        # URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
+        # URM_train, URM_validation = train_test_split(train_R, train_size = 0.8, test_size = 0.2, 
+        #                                                 random_state = args.random_seed)
 
-        # if apply_hyperparams_tuning:
-        #     best_parameters_SLIMElasticNet = hyperparams_tuning(SLIMElasticNetRecommender)
-        # else:
-        #     best_parameters_SLIMElasticNet = best_parameters_list["SLIMElasticNetRecommender"]
+        URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
+        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
 
-        # SLIMElasticNet.fit(**best_parameters_SLIMElasticNet)
+        apply_hyperparams_tuning = True
 
-        model = SLIM(l1_reg=args.l1_reg,l2_reg=args.l2_reg,model=args.learner)
-        print(model)
-        model.fit(R)
+        from recommenders.Recommenders.SLIMElasticNetRecommender import SLIMElasticNetRecommender
+
+        SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
+        
+        if apply_hyperparams_tuning:
+            best_parameters_SLIMElasticNet = hyperparams_tuning(SLIMElasticNetRecommender, 
+                                                                    URM_train, URM_validation, URM_test)
+        else:
+            best_parameters_SLIMElasticNet = SLIMElasticNet_best_parameters_list[args.data_name]
+
+        SLIMElasticNet.fit(**best_parameters_SLIMElasticNet)
+
+        exit(0)
+
+
+        # model = SLIM(l1_reg=args.l1_reg,l2_reg=args.l2_reg,model=args.learner)
+        # print(model)
+        # model.fit(train_R)
 
         # self.test_model(epoch_itr)
         # evaluate_algorithm(URM_test, recommender)
@@ -295,47 +420,3 @@ with tf.compat.v1.Session() as sess:
     else:
         raise NotImplementedError("ERROR")
 
-
-# def hyperparams_tuning(recommender_class):
-
-#     metric_to_optimize = "MAP"
-
-#     evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[cutoff])
-#     # evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[cutoff, cutoff + 5])
-#     evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[cutoff])
-#     evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[cutoff], exclude_seen=False)
-
-#     output_folder_path = "result_experiments/"
-
-#     # # If directory does not exist, create
-#     cwd = os.getcwd()
-#     if not os.path.exists(os.path.join(cwd, output_folder_path)):
-#         os.makedirs(output_folder_path)
-
-#     n_cases = 8  # 2
-#     n_random_starts = 5  # int(n_cases / 3)
-
-#     save_model = "no"
-#     allow_weighting = True  # provides better results
-#     similarity_type_list = ["cosine"]
-#     similarity_type = similarity_type_list[0]  # KNN Recommenders on similarity_type
-
-#     output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
-    
-#     try:
-#         runParameterSearch_Collaborative(recommender_class=recommender_class,
-#                                             URM_train=URM_train,
-#                                             metric_to_optimize=metric_to_optimize,
-#                                             evaluator_validation=evaluator_validation,
-#                                             evaluator_test=evaluator_test,
-#                                             evaluator_validation_earlystopping=evaluator_validation_earlystopping,
-#                                             output_folder_path=output_folder_path,
-#                                             n_cases=n_cases,
-#                                             n_random_starts=n_random_starts,
-#                                             save_model=save_model,
-#                                             allow_weighting=allow_weighting,
-#                                             similarity_type_list=similarity_type_list)
-
-#     except Exception as e:
-#         print("On recommender {} Exception {}".format(recommender_class, str(e)))
-#         traceback.print_exc()
