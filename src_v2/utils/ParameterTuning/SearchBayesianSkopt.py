@@ -11,7 +11,6 @@ from skopt.space import Real, Integer, Categorical
 from utils.ParameterTuning.SearchAbstractClass import SearchAbstractClass
 import traceback
 
-
 class SearchBayesianSkopt(SearchAbstractClass):
 
     ALGORITHM_NAME = "SearchBayesianSkopt"

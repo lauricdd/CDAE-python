@@ -6,6 +6,7 @@ from utils.data_preprocessor import *
 from utils.data_manager import *
 
 from utils.Evaluation.Evaluator import EvaluatorHoldout
+from utils.utils import save_dictionary
 
 from CDAE import CDAE
 from DAE import DAE
@@ -99,7 +100,7 @@ model_name = args.model_name
 data_name = args.data_name
 test_fold = args.test_fold
 
-model_string = "\nType of model: {}\nLoading {} data \nTest fold: {}".format(
+model_string = "\nType of model: {}\Dataser: {} \nTest fold: {}".format(
     model_name,
     data_name,
     test_fold
@@ -152,7 +153,7 @@ current_time = time.strftime("%m%d%Y_%H:%M:%S", named_tuple)
 a = args.a
 b = args.b
 
-result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold) +  '/' + str(current_time)+"/"
+result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold) +  '/' + str(current_time) + '/'
 
 # read ratings file and train/test split
 R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings,\
@@ -242,7 +243,7 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
         FIT_KEYWORD_ARGS={}
     )
     
-    output_folder_path = "result_experiments/"
+    output_folder_path = "../results/result_experiments/"
     
     # If directory does not exist, create
     if not os.path.exists(output_folder_path):
@@ -353,7 +354,7 @@ with tf.compat.v1.Session() as sess:
                     user_train_set, item_train_set, user_test_set, item_test_set,
                     result_path,data_name,model_name,test_fold,corruption_level) 
                     
-        # train and test the model
+        # train and evaluate the model
         cdae_model.run()
 
 
@@ -391,21 +392,20 @@ with tf.compat.v1.Session() as sess:
         
         print("Fitting SLIMElasticNet model using best tuned parameters", best_parameters_SLIMElasticNet)
 
+        # train the model
         SLIMElasticNet.fit(**best_parameters_SLIMElasticNet)
         
-        
+        # evaluate the model
         evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
         result_dict, _ = evaluator_test.evaluateRecommender(SLIMElasticNet)
 
-        print("{} result_dict MAP {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[5, 10]["MAP"]))
+        result_path = '../results/' + data_name + '/' + model_name + '/' + str(current_time) + '/'
 
+        # save_dictionary(result_path, best_parameters_SLIMElasticNet, result_dict)
         
-        
-        
-        # make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,
-        #               test_map_at_5_list,test_map_at_10_list, current_time, args)
 
-
+        print("{} result_dict MAP@5 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[5]["MAP"]))    
+        print("{} result_dict MAP@10 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[10]["MAP"]))
         
         # evaluate_algorithm(URM_test, recommender)
 
