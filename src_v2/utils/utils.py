@@ -202,71 +202,102 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
             'encoder_method': args.encoder_method
         })
 
-    elif(args.model_name == 'SLIMElasticNet'): # TODO: check!
-        model_params_dict.update({
-            'l1_reg': args.l1_reg,
-            'l2_reg': args.l2_reg,
-            'learner': args.learner
+
+        with open(model_info, 'a') as f:
+            for k,v in model_params_dict.items():
+                s = str(k) + "   " + str(v) + "\n"
+                f.write(s)
+
+        # with open(model_info, 'a') as f:
+        #     for arg in vars(args): # parser.parse_args() variables
+        #         s = str(arg) + "   " + str(getattr(args, arg)) + "\n"
+        #         f.write(s)
+        
+        ##########################################################
+        
+        # evaluation metrics (on text_fold) by epoch
+        test_record = result_path + 'test_record.txt'
+
+        test_record_df = pd.DataFrame({
+            'RMSE': test_rmse_list,
+            'MAE': test_mae_list,
+            'ACC': test_acc_list,
+            'NALL': test_avg_loglike_list,
+            'MAP@5': test_map_at_5_list,
+            'MAP@10': test_map_at_10_list
         })
 
-    with open(model_info, 'a') as f:
-        for k,v in model_params_dict.items():
-            s = str(k) + "   " + str(v) + "\n"
-            f.write(s)
+        test_record_df.index.name = 'Epoch'
 
-    # with open(model_info, 'a') as f:
-    #     for arg in vars(args): # parser.parse_args() variables
-    #         s = str(arg) + "   " + str(getattr(args, arg)) + "\n"
-    #         f.write(s)
+        trfile = open(test_record, 'a')
+        trfile.write(test_record_df.to_string())
+        trfile.close()
+
+        ##########################################################
+
+        plots_dir = result_path + 'plots/'
+        os.makedirs(plots_dir)
+
+        print("Plotting error metrics.....")
+
+        plt.plot(test_acc_list, label="ACC")
+        plt.plot(test_rmse_list, label="RMSE")  
+        plt.plot(test_mae_list, label="MAE")  
+        plt.plot(test_avg_loglike_list, label="NALL")  
+
+        plt.xlabel('Epochs')
+        plt.ylabel('Test evaluation metrics')
+        plt.legend()
+        plt.savefig(plots_dir + "test_evaluation.png")
+        plt.clf()
+
+        print("Plotting ranking metrics.....")
+
+        plt.plot(test_map_at_5_list, label="MAP@5")
+        plt.plot(test_map_at_10_list, label="MAP@10")   
+
+        plt.xlabel('Epochs')
+        plt.ylabel('MAP')
+        plt.legend()
+        plt.savefig(plots_dir + "test_top_k_evaluation.png")
+        plt.clf()
+
+
+ def save_dictionary(result_path, best_parameters_dict, result_dict):
     
-    ##########################################################
-    
-    # evaluation metrics (on text_fold) by epoch
-    test_record = result_path + 'test_record.txt'
-
-    test_record_df = pd.DataFrame({
-        'RMSE': test_rmse_list,
-        'MAE': test_mae_list,
-        'ACC': test_acc_list,
-        'NALL': test_avg_loglike_list,
-        'MAP@5': test_map_at_5_list,
-        'MAP@10': test_map_at_10_list
-    })
-
-    test_record_df.index.name = 'Epoch'
-
-    trfile = open(test_record, 'a')
-    trfile.write(test_record_df.to_string())
-    trfile.close()
+    if not os.path.exists(result_path):
+        os.makedirs(result_path)
 
     ##########################################################
 
-    plots_dir = result_path + 'plots/'
-    os.makedirs(plots_dir)
+    model_info = result_path + 'model_params.txt'
 
-    print("Plotting error metrics.....")
+    model_params_dict = {
+        'data_name': args.data_name,
+        'test_fold': args.test_fold,
+        'model_name': args.model_name,
+    }
 
-    plt.plot(test_acc_list, label="ACC")
-    plt.plot(test_rmse_list, label="RMSE")  
-    plt.plot(test_mae_list, label="MAE")  
-    plt.plot(test_avg_loglike_list, label="NALL")  
+    if(args.model_name == 'SLIMElasticNet'): 
 
-    plt.xlabel('Epochs')
-    plt.ylabel('Test evaluation metrics')
-    plt.legend()
-    plt.savefig(plots_dir + "test_evaluation.png")
-    plt.clf()
+        model = zip(model_params_dict, best_parameters_dict)
 
-    print("Plotting ranking metrics.....")
+        with open(model_info, 'a') as f:
+            for k,v in model.items():
+                s = str(k) + "   " + str(v) + "\n"
+                f.write(s)
 
-    plt.plot(test_map_at_5_list, label="MAP@5")
-    plt.plot(test_map_at_10_list, label="MAP@10")   
+        ##########################################################
 
-    plt.xlabel('Epochs')
-    plt.ylabel('MAP')
-    plt.legend()
-    plt.savefig(plots_dir + "test_top_k_evaluation.png")
-    plt.clf()
+        # evaluation metrics (on text_fold) by epoch
+        test_record = result_path + 'test_record.txt'
+
+        with open(test_record, 'a') as f:
+            for k,v in result_dict.items():
+                s = str(k) + "   " + str(v) + "\n"
+                f.write(s)
+          
+
 
 def variable_save(result_path,model_name,train_var_list1,train_var_list2,Estimated_R,test_v_ud,mask_test_v_ud):
     for var in train_var_list1:
@@ -303,6 +334,7 @@ def variable_save(result_path,model_name,train_var_list1,train_var_list2,Estimat
     np.savetxt(result_path + "user_error_list", user_error_list)
     np.savetxt(result_path + "item_error_list", item_error_list)
 
+
 def SDAE_calculate(model_name,X_c, layer_structure, W, b, batch_normalization, f_act,g_act, model_keep_prob,V_u=None):
     hidden_value = X_c
     for itr1 in range(len(layer_structure) - 1):
@@ -336,8 +368,10 @@ def SDAE_calculate(model_name,X_c, layer_structure, W, b, batch_normalization, f
 
     return Encoded_X, sdae_output
 
+
 def l2_norm(tensor):
     return tf.sqrt(tf.reduce_sum(input_tensor=tf.square(tensor)))
+
 
 def softmax(w, t = 1.0):
     npa = np.array

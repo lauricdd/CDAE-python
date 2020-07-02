@@ -398,15 +398,15 @@ with tf.compat.v1.Session() as sess:
         # evaluate the model
         evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
         result_dict, _ = evaluator_test.evaluateRecommender(SLIMElasticNet)
+        
+        print("{} result_dict MAP@5 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[5]["MAP"]))    
+        print("{} result_dict MAP@10 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[10]["MAP"]))
 
-        result_path = '../results/' + data_name + '/' + model_name + '/' + str(current_time) + '/'
-
+        # result_path = '../results/' + data_name + '/' + model_name + '/' + str(current_time) + '/'
         # save_dictionary(result_path, best_parameters_SLIMElasticNet, result_dict)
         
 
-        print("{} result_dict MAP@5 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[5]["MAP"]))    
-        print("{} result_dict MAP@10 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[10]["MAP"]))
-        
+
         # evaluate_algorithm(URM_test, recommender)
 
         # RMSE, MAE, ACC, AVG_loglikelihood = evaluation(self.test_R, self.test_mask_R, 
