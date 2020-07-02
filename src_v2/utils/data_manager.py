@@ -236,8 +236,10 @@ def movielens_10m_statistics(ratings_df):
     num_items = unique_values(ratings_df["movie_id"])
     num_total_ratings =  ratings_df.shape[0]
 
+    print("=" * 100)
     print("Movielens_10m statistics ...")
-
+    print("=" * 100)
+    
     # min and max value for each colum of a given dataframe
     min_max = ratings_df.describe().loc[['min','max']]#.astype(int)
     print("min_max values: \n",  min_max)

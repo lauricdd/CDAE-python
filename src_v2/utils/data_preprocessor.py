@@ -61,7 +61,7 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
 
 
         ''' load test fold '''
-        print("Load test fold ... ", str(test_fold))
+        print("Load test fold ... {}\n".format(test_fold))
         with open(path + test_file_name) as f2:
             lines = f2.readlines()
             for line in lines:

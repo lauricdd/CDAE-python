@@ -64,32 +64,32 @@ def evaluation(test_R, test_mask_R, Estimated_R, num_test_ratings):
 ''' 
     Get test set relevant items for a given user
 '''
-def get_relevant_items(user_id, URM_test):
-    relevant_items = URM_test[user_id].indices
+# def get_relevant_items(user_id, URM_test):
+#     relevant_items = URM_test[user_id].indices
 
-    return relevant_items
+#     return relevant_items
 
 '''
     Check whether recommended items are relevant
 '''
-def get_is_relevant(recommended_items, relevant_items):
-    is_relevant = np.in1d(recommended_items, relevant_items, assume_unique=True) # compare elements in both arrays
+# def get_is_relevant(recommended_items, relevant_items):
+#     is_relevant = np.in1d(recommended_items, relevant_items, assume_unique=True) # compare elements in both arrays
 
-    return is_relevant
+#     return is_relevant
 
 '''
     Mean Average Precision (MAP@K) gives insight into how relevant the list of recommended items are
     Cumulative sum: precision at k=1, at k=2, at k=3 ...
 '''
-def MAP(is_relevant, relevant_items):
+# def MAP(is_relevant, relevant_items):
     # MAP@K to average the AP@N metric over all your |U| users. 
     # rel(k) is just an indicator that says whether that kth item was relevant
-    p_at_k = is_relevant * np.cumsum(is_relevant, dtype=np.float32) / (1 + np.arange(is_relevant.shape[0]))
+    # p_at_k = is_relevant * np.cumsum(is_relevant, dtype=np.float32) / (1 + np.arange(is_relevant.shape[0]))
 
     # sum(ratings of recommended items)/N recommended items
-    map_score = np.sum(p_at_k) / np.min([relevant_items.shape[0], is_relevant.shape[0]])
+    # map_score = np.sum(p_at_k) / np.min([relevant_items.shape[0], is_relevant.shape[0]])
 
-    return map_score
+    # return map_score
 
 def compute_apk(y_true, y_pred, k):
     """
@@ -202,7 +202,7 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
             'encoder_method': args.encoder_method
         })
 
-    elif(args.model_name == 'SLIMElasticNet'):
+    elif(args.model_name == 'SLIMElasticNet'): # TODO: check!
         model_params_dict.update({
             'l1_reg': args.l1_reg,
             'l2_reg': args.l2_reg,

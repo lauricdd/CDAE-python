@@ -5,6 +5,8 @@ import argparse
 from utils.data_preprocessor import *
 from utils.data_manager import *
 
+from utils.Evaluation.Evaluator import EvaluatorHoldout
+
 from CDAE import CDAE
 from DAE import DAE
 from recommenders.SLIM import SLIM
@@ -14,16 +16,7 @@ from recommenders.SLIM import SLIM
 import warnings
 warnings.filterwarnings('ignore')
 
-# current_time = time.time()
-named_tuple = time.localtime() # get struct_time
-current_time = time.strftime("%m%d%Y_%H:%M:%S", named_tuple)
-
-
-
-# ------------------------------------------------------------------ #
-                    ##### Model setup #####
-# ------------------------------------------------------------------ #
-
+                        
 #TODO: use easydict
 
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
@@ -31,14 +24,15 @@ parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default=
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m'], default='politic_old')
+parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m'], 
+                    default='politic_old')
 
 # train/test fold for training
 # for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
-parser.add_argument('--test_fold', type=int, default=0) # TODO: iterate all folds at once 
+parser.add_argument('--test_fold', type=int, default=1) # TODO: iterate all folds at once 
 
 # training epochs
-parser.add_argument('--train_epoch', type=int, default=100)
+parser.add_argument('--train_epoch', type=int, default=50)
 parser.add_argument('--display_step', type=int, default=1)
 
 # learning rate
@@ -76,18 +70,22 @@ parser.add_argument('--a', type=float, default=1)
 parser.add_argument('--b', type=float, default=0)
 
 # Autoencoder types:
-'''SDAE: Stacked Denoising Autoencoder
-VAE: Variational Autoencoder '''
+'''SDAE: Stacked Denoising Autoencoder VAE: Variational Autoencoder '''
 parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 
-# SLIM parameters
 
-# l1 regularization constant
-parser.add_argument('--l1_reg', type=float, default = 0.001)
-# l2 regularization constant
-parser.add_argument('--l2_reg', type=float, default = 0.0001)
-# underlying learner for SLIM learner
-parser.add_argument('--learner', choices=['sgd','elasticnet','fs_sgd'], default = 'elasticnet')
+# SLIM parameters
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
+
+# best hyperparamas config evaluated with evaluator_test. 
+SLIMElasticNet_best_parameters_list = {
+    # fold 0
+    'politic_old': {'topK': 1000, 'l1_ratio': 1e-05, 'alpha': 0.001}, 
+    
+    # using random splitting on the entire dataset (using R matrix)
+    'movielens_10m': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258} 
+}
+
 
 args = parser.parse_args()
 
@@ -97,29 +95,30 @@ np.random.seed(random_seed)
 tf.compat.v1.set_random_seed(random_seed)
 
 
-# ------------------------------------------------------------------ #
-                    ##### Data managing #####
-# ------------------------------------------------------------------ #
-
-
 model_name = args.model_name
+data_name = args.data_name
+test_fold = args.test_fold
+
+model_string = "\nType of model: {}\nLoading {} data \nTest fold: {}".format(
+    model_name,
+    data_name,
+    test_fold
+)
+print(model_string)
 
 # Data directory
-data_name = args.data_name
 data_base_dir = "../data/"
 path = data_base_dir + "%s" % data_name + "/"
 
 ''' 
-Attributes of Politic2013 and Politic2016 datasets
-Num of legislators (|U|) = num_users
-Num of bills (|D|) = num_items
-Num of votings (|D|) = num_total_ratings
+    Attributes of Politic2013(politic_old) and Politic2016(politic_new) datasets
+    Num of legislators (|U|) = num_users
+    Num of bills (|D|) = num_items
+    Num of votings (|D|) = num_total_ratings
+
+    User IDs are in ranges from 1 to 1537-1
 '''
 
-print("Loading", data_name, "data ... ", end="\n")
-
-# politic_new and politic_old 
-# User IDs are in ranges from 1 to 1537-1
 
 if data_name == 'politic_new': # Politic2016
     num_users = 1537 
@@ -147,73 +146,21 @@ else:
     raise NotImplementedError("ERROR")
 
 
-# ------------------------------------------------------------------ #
-                    ##### Training config #####
-# ------------------------------------------------------------------ #
- 
+named_tuple = time.localtime() # get struct_time
+current_time = time.strftime("%m%d%Y_%H:%M:%S", named_tuple)
+
 a = args.a
 b = args.b
-
-test_fold = args.test_fold
-hidden_neuron = args.hidden_neuron
-
-keep_prob = args.keep_prob
-batch_normalization = args.batch_normalization
-
-batch_size = 256
-lr = args.lr
-train_epoch = args.train_epoch
-optimizer_method = args.optimizer_method
-display_step = args.display_step
-
-# learning rate schedules: adapt lr based on number of epochs
-decay_epoch_step = 10000 
-decay_rate = 0.96
-grad_clip = args.grad_clip
-
-if args.f_act == "Sigmoid":
-    f_act = tf.nn.sigmoid
-elif args.f_act == "Relu":
-    f_act = tf.nn.relu
-elif args.f_act == "Tanh":
-    f_act = tf.nn.tanh
-elif args.f_act == "Identity":
-    f_act = tf.identity
-elif args.f_act == "Elu":
-    f_act = tf.nn.elu
-else:
-    raise NotImplementedError("ERROR")
-
-if args.g_act == "Sigmoid":
-    g_act = tf.nn.sigmoid
-elif args.g_act == "Relu":
-    g_act = tf.nn.relu
-elif args.g_act == "Tanh":
-    g_act = tf.nn.tanh
-elif args.g_act == "Identity":
-    g_act = tf.identity
-elif args.g_act == "Elu":
-    g_act = tf.nn.elu
-else:
-    raise NotImplementedError("ERROR")
-
 
 result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold) +  '/' + str(current_time)+"/"
 
 # read ratings file and train/test split
-R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,\
-user_train_set,item_train_set,user_test_set,item_test_set \
-    = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold,random_seed)
+R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings,\
+user_train_set, item_train_set, user_test_set, item_test_set \
+    = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold, random_seed)
 
-# model params
-# print("model arguments:\n", args, end="\n")
-model_string = "\nType of model: {}, \nDataset: {}, \nTest fold: {}, \nHidden neurons: {} \n".format(
-        model_name,
-        data_name,
-        test_fold,
-        hidden_neuron
-    )
-print(model_string)
+
+######################################################################
 
 # Matrix Compressed Sparse Row format
 # -----------------------------------
@@ -257,6 +204,8 @@ def split_train_validation_random_holdout(URM, train_split):
 
 
 # Hyper-parameters tuning: Bayesian Optimization Approach
+# Model specific cross-validation
+# Elastic Net model with iterative fitting along a regularization path
 def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
     from utils.Evaluation.Evaluator import EvaluatorHoldout
@@ -318,28 +267,65 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
                                 
     print("best_parameters", best_parameters)
 
-    # # Step 5: return best_parameters
-    # # from utils.DataIO import DataIO
-    # # data_loader = DataIO(folder_path=output_folder_path)
-    # # search_metadata = data_loader.load_data(recommender_class.RECOMMENDER_NAME + "_metadata.zip")
-    # # print("search_metadata", search_metadata)
+    # Step 5: return best_parameters
+    # from utils.DataIO import DataIO
+    # data_loader = DataIO(folder_path=output_folder_path)
+    # search_metadata = data_loader.load_data(recommender_class.RECOMMENDER_NAME + "_metadata.zip")
+    # print("search_metadata", search_metadata)
     
     # best_parameters = search_metadata["hyperparameters_best"]
 
     return best_parameters
 
+######################################################################
 
-# Best hyperparameters found by tuning (by dataset)
-# -------------------------------------------------
 
-SLIMElasticNet_best_parameters_list = {
-    'politic_old': {'topK': 1000, 'l1_ratio': 1e-05, 'alpha': 0.001},
-}
-
-''' Launch the evaluation graph in a session '''
+# Launch the evaluation graph in a session 
 with tf.compat.v1.Session() as sess:
    
     if model_name == "CDAE":
+        
+        hidden_neuron = args.hidden_neuron
+        keep_prob = args.keep_prob
+        batch_normalization = args.batch_normalization
+
+        batch_size = 256
+        lr = args.lr
+        train_epoch = args.train_epoch
+        optimizer_method = args.optimizer_method
+        display_step = args.display_step
+
+        # learning rate schedules: adapt lr based on number of epochs
+        decay_epoch_step = 10000 
+        decay_rate = 0.96
+        grad_clip = args.grad_clip
+
+        if args.f_act == "Sigmoid":
+            f_act = tf.nn.sigmoid
+        elif args.f_act == "Relu":
+            f_act = tf.nn.relu
+        elif args.f_act == "Tanh":
+            f_act = tf.nn.tanh
+        elif args.f_act == "Identity":
+            f_act = tf.identity
+        elif args.f_act == "Elu":
+            f_act = tf.nn.elu
+        else:
+            raise NotImplementedError("ERROR")
+
+        if args.g_act == "Sigmoid":
+            g_act = tf.nn.sigmoid
+        elif args.g_act == "Relu":
+            g_act = tf.nn.relu
+        elif args.g_act == "Tanh":
+            g_act = tf.nn.tanh
+        elif args.g_act == "Identity":
+            g_act = tf.identity
+        elif args.g_act == "Elu":
+            g_act = tf.nn.elu
+        else:
+            raise NotImplementedError("ERROR")
+
         lambda_value = args.lambda_value
         corruption_level = args.corruption_level
 
@@ -357,7 +343,7 @@ with tf.compat.v1.Session() as sess:
             # get initial weights using do_not_pretrain
             pre_W[itr], pre_b[itr] = initial_DAE.do_not_pretrain()
 
-            # get initial weights using do_pretrain??
+            # TODO: get initial weights using do_pretrain??
 
         cdae_model = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,
@@ -370,52 +356,73 @@ with tf.compat.v1.Session() as sess:
         # train and test the model
         cdae_model.run()
 
-    
-    # Machine learning approach to Item-based CF
-    # Sparse LInear Method
 
+    # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":      
         
-        # Model specific cross-validation
-        # Elastic Net model with iterative fitting along a regularization path
-
-        print("Splitting ... ")
-        from sklearn.model_selection import train_test_split
-
+        print("Splitting dataset ... ")
+        
+        # from sklearn.model_selection import train_test_split
         # Split dataset into train, validation and test with 0.6, 0.2, 0.2
         # URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
         # URM_train, URM_validation = train_test_split(train_R, train_size = 0.8, test_size = 0.2, 
         #                                                 random_state = args.random_seed)
 
+
+        # Split dataset into train, validation and test
         URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
         URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
 
-        apply_hyperparams_tuning = True
 
         from recommenders.Recommenders.SLIMElasticNetRecommender import SLIMElasticNetRecommender
 
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
         
+        if args.apply_hyperparams_tuning == "True":
+            apply_hyperparams_tuning = True
+        else:
+            apply_hyperparams_tuning = False
+
         if apply_hyperparams_tuning:
             best_parameters_SLIMElasticNet = hyperparams_tuning(SLIMElasticNetRecommender, 
                                                                     URM_train, URM_validation, URM_test)
         else:
-            best_parameters_SLIMElasticNet = SLIMElasticNet_best_parameters_list[args.data_name]
+            best_parameters_SLIMElasticNet = SLIMElasticNet_best_parameters_list[data_name]
+        
+        print("Fitting SLIMElasticNet model using best tuned parameters", best_parameters_SLIMElasticNet)
 
         SLIMElasticNet.fit(**best_parameters_SLIMElasticNet)
+        
+        
+        evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
+        result_dict, _ = evaluator_test.evaluateRecommender(SLIMElasticNet)
 
-        exit(0)
+        print("{} result_dict MAP {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[5, 10]["MAP"]))
 
+        
+        
+        
+        # make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,
+        #               test_map_at_5_list,test_map_at_10_list, current_time, args)
+
+
+        
+        # evaluate_algorithm(URM_test, recommender)
+
+        # RMSE, MAE, ACC, AVG_loglikelihood = evaluation(self.test_R, self.test_mask_R, 
+        #                                                 Estimated_R, self.num_test_ratings)
+        
+
+        # l1 regularization constant
+        # parser.add_argument('--l1_reg', type=float, default = 0.001)
+        # l2 regularization constant
+        # parser.add_argument('--l2_reg', type=float, default = 0.0001)
+        # underlying learner for SLIM learner
+        # parser.add_argument('--learner', choices=['sgd','elasticnet','fs_sgd'], default = 'elasticnet')
 
         # model = SLIM(l1_reg=args.l1_reg,l2_reg=args.l2_reg,model=args.learner)
         # print(model)
         # model.fit(train_R)
-
-        # self.test_model(epoch_itr)
-        # evaluate_algorithm(URM_test, recommender)
-        
-        # make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg_loglike_list,
-        #               test_map_at_5_list,test_map_at_10_list, current_time, args)
 
     else:
         raise NotImplementedError("ERROR")
