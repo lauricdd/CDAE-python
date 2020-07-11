@@ -8,9 +8,9 @@ from utils.data_manager import *
 from utils.Evaluation.Evaluator import EvaluatorHoldout
 from utils.utils import save_dictionary
 
-from CDAE import CDAE
-from DAE import DAE
-from recommenders.SLIM import SLIM
+from recommenders.Recommenders.SLIMElasticNetRecommender import SLIMElasticNetRecommender
+from recommenders.CDAE import CDAE
+from recommenders.DAE import DAE
 
 # Ignore warning 
 # TODO: check warnings
@@ -19,17 +19,22 @@ warnings.filterwarnings('ignore')
 
                         
 #TODO: use easydict
-
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
-parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='SLIMElasticNet')
+parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m'], 
-                    default='politic_old')
+parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize'], 
+                        default='movielens_10m')
+
+
+######################################################################
+# CDAE parameters
+######################################################################
 
 # train/test fold for training
-# for politic_old and politic_new: 0,1,2,3,4. In the case of movielens_10m 1,2,3,4,5
+# for politic_old and politic_new: 0,1,2,3,4. 
+# In the case of movielens_10m and netflix_prize: 1,2,3,4,5
 parser.add_argument('--test_fold', type=int, default=1) # TODO: iterate all folds at once 
 
 # training epochs
@@ -75,7 +80,10 @@ parser.add_argument('--b', type=float, default=0)
 parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 
 
+######################################################################
 # SLIM parameters
+######################################################################
+
 parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
 
 # best hyperparamas config evaluated with evaluator_test. 
@@ -86,6 +94,7 @@ SLIMElasticNet_best_parameters_list = {
     # using random splitting on the entire dataset (using R matrix)
     'movielens_10m': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258} 
 }
+
 
 
 args = parser.parse_args()
@@ -100,7 +109,7 @@ model_name = args.model_name
 data_name = args.data_name
 test_fold = args.test_fold
 
-model_string = "\nType of model: {}\Dataser: {} \nTest fold: {}".format(
+model_string = "\nType of model: {} \nDataset: {} \nTest fold: {}".format(
     model_name,
     data_name,
     test_fold
@@ -135,13 +144,28 @@ elif data_name == 'movielens_10m':
     
     data_path = "../data/movielens_10m/"
    
-    if not os.path.isdir(data_path): # run just once
+    if not os.path.isdir(data_path): # run just first time
         ratings_df = movielens_10m_prepare_data(data_name)
     else: 
         ratings_df = load_movielens_10m_data()
 
     # Data exploration (summary statitics) 
     num_users, num_items, num_total_ratings = movielens_10m_statistics(ratings_df)
+
+elif data_name == 'netflix_prize': 
+    
+    data_path = "../data/netflix_prize/"
+
+    print(data_path)
+
+    if not os.path.isdir(data_path): # run just once
+        ratings_df = netflix_prize_prepare_data(data_name)
+        
+    else: 
+        print("OK!!")
+        # ratings_df = load_movielens_10m_data()
+
+    exit(0)
 
 else:
     raise NotImplementedError("ERROR")
@@ -204,9 +228,7 @@ def split_train_validation_random_holdout(URM, train_split):
     return URM_train, URM_test
 
 
-# Hyper-parameters tuning: Bayesian Optimization Approach
-# Model specific cross-validation
-# Elastic Net model with iterative fitting along a regularization path
+ 
 def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
     from utils.Evaluation.Evaluator import EvaluatorHoldout
@@ -371,14 +393,14 @@ with tf.compat.v1.Session() as sess:
 
 
         # Split dataset into train, validation and test
+        # Holdout data: for each user, randomly hold 20% of the ratings in the test set
         URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
         URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
-
-
-        from recommenders.Recommenders.SLIMElasticNetRecommender import SLIMElasticNetRecommender
-
+ 
+        # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
         
+        # hyperparameters tuning
         if args.apply_hyperparams_tuning == "True":
             apply_hyperparams_tuning = True
         else:
@@ -402,27 +424,11 @@ with tf.compat.v1.Session() as sess:
         print("{} result_dict MAP@5 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[5]["MAP"]))    
         print("{} result_dict MAP@10 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[10]["MAP"]))
 
-        # result_path = '../results/' + data_name + '/' + model_name + '/' + str(current_time) + '/'
-        # save_dictionary(result_path, best_parameters_SLIMElasticNet, result_dict)
-        
+        # SLIMElasticNetRecommender result_dict MAP@5 0.5152164713541642
+        # SLIMElasticNetRecommender result_dict MAP@10 0.47914679402576965
 
-
-        # evaluate_algorithm(URM_test, recommender)
-
-        # RMSE, MAE, ACC, AVG_loglikelihood = evaluation(self.test_R, self.test_mask_R, 
-        #                                                 Estimated_R, self.num_test_ratings)
-        
-
-        # l1 regularization constant
-        # parser.add_argument('--l1_reg', type=float, default = 0.001)
-        # l2 regularization constant
-        # parser.add_argument('--l2_reg', type=float, default = 0.0001)
-        # underlying learner for SLIM learner
-        # parser.add_argument('--learner', choices=['sgd','elasticnet','fs_sgd'], default = 'elasticnet')
-
-        # model = SLIM(l1_reg=args.l1_reg,l2_reg=args.l2_reg,model=args.learner)
-        # print(model)
-        # model.fit(train_R)
+        result_path = '../results/' + data_name + '/' + model_name + '/' + str(current_time) + '/'
+        save_dictionary(result_path, best_parameters_SLIMElasticNet, result_dict, args)
 
     else:
         raise NotImplementedError("ERROR")
