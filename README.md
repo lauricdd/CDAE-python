@@ -22,15 +22,35 @@ You can download **politic_old** from [https://github.com/gtshs2/NIPEN/tree/mast
 
 You can download **politic_new** from [https://github.com/gtshs2/NIPEN/tree/master/data/politic_new](https://github.com/gtshs2/NIPEN/tree/master/data/politic_new)
 
-## Setup
+
+## Initial checkings
 
 Check python version (Python 3.7.3)
 
     python3 --version 
       
-Open source code tensorflow v2.0
+Open source code folder
 
     cd src_v2
+    
+## Kaggle setup to use datasets
+
+Create kaggle.json file with custom credentials
+
+    nano kaggle.json 
+    
+    kaggle.json
+    -----------
+    {"username":"xxx","key":"xxx "}
+
+Copy kaggle.json into the folder where the API expects to find it.
+
+    mkdir -p ~/.kaggle
+    cp kaggle.json ~/.kaggle/
+    chmod 600 ~/.kaggle/kaggle.json
+    ls ~/.kaggle
+
+## Setup
     
 Install virtualenv using pip3 
 
@@ -42,11 +62,11 @@ Create virtual environment (env)
   
 Activate virtualenv
 
-	source env/bin/activate
-    
+    source env/bin/activate
+
 Install dependencies (using requirements file)
 
-	pip3 install -r requirements.txt
+    pip3 install -r requirements.txt
     
 Run main file
 
