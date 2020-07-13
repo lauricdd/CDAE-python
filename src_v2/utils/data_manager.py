@@ -44,22 +44,12 @@ def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
     if(dataset_name == "netflix_prize"):
         print("\n")
         print("="*100)
-        print("netflix-prize-data dataset files")
-        os.system("kaggle datasets files netflix-inc/netflix-prize-data")
+        print("netflix-prize dataset files\n")
+        os.system("kaggle datasets files lauraschiatti/netflix-prize")
 
-        # combined_data_x_.txt files contain the raitings, with format:
-        # MovieID1:
-        # CustomerID11,Date11
-        # CustomerID12,Date12
-        # ...
-        # MovieID2:
-        # CustomerID21,Date21
-        # CustomerID22,Date22
-
-        data_files = ['combined_data_{}.txt'.format(i) for i in range(1,5)] 
-        
+        data_files = ["ratings.csv"] 
         for filename in data_files:
-            command =  "kaggle datasets download -f " + str(filename)+ " -p ../data/netflix_prize --unzip netflix-inc/netflix-prize-data"
+            command =  "kaggle datasets download -f " + str(filename)+ " -p ../data/netflix_prize --unzip lauraschiatti/netflix-prize"
             os.system(command)
 
         # --unzip not working. Unzip data files manually
@@ -113,7 +103,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
                                         path=DATASET_SUBFOLDER)  # extract data
 
         # load the dataset
-        # format: user_id,movie_id,rating,timestamp
+        # format: user_id::movie_id::rating::timestamp
         cols = ['user_id', 'movie_id', 'rating', 'timestamp']
         ratings_df = pd.read_csv(data_path, delimiter='::', header=None, 
                 names=cols, usecols=cols[0:3], # do not consider timestamp 
@@ -123,68 +113,14 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         
         download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
 
-        # Now combine datasets    
-        df1 = pd.read_csv(DATASET_SUBFOLDER +'combined_data_1.txt', header = None, 
-                            names = ['Cust_Id', 'Rating'], usecols = [0,1]) # skip date
-        df2 = pd.read_csv(DATASET_SUBFOLDER + 'combined_data_2.txt', header = None, 
-                            names = ['Cust_Id', 'Rating'], usecols = [0,1])
-        df3 = pd.read_csv(DATASET_SUBFOLDER + 'combined_data_3.txt', header = None, 
-                            names = ['Cust_Id', 'Rating'], usecols = [0,1])
-        df4 = pd.read_csv(DATASET_SUBFOLDER + 'combined_data_4.txt', header = None, 
-                            names = ['Cust_Id', 'Rating'], usecols = [0,1])
-        # print('Dataset 1 shape: {}'.format(df1.shape))
-
-        df1['Rating'] = df1['Rating'].astype(float)
-        df2['Rating'] = df2['Rating'].astype(float)
-        df3['Rating'] = df3['Rating'].astype(float)
-        df4['Rating'] = df4['Rating'].astype(float)
-
-        df = df1
-        df = df1.append(df2)
-        df = df.append(df3)
-        df = df.append(df4)
-
-        df.index = np.arange(0,len(df))
-        print('Full dataset shape: {}'.format(df.shape))
-
-        # data cleaning
-        df_nan = pd.DataFrame(pd.isnull(df.Rating))
-        df_nan = df_nan[df_nan['Rating'] == True]
-        df_nan = df_nan.reset_index()
-
-        movie_np = []
-        movie_id = 1
-
-        for i,j in zip(df_nan['index'][1:],df_nan['index'][:-1]):
-            # numpy approach
-            temp = np.full((1,i-j-1), movie_id)
-            movie_np = np.append(movie_np, temp)
-            movie_id += 1
-
-        # Account for last record and corresponding length
-        # numpy approach
-        last_record = np.full((1,len(df) - df_nan.iloc[-1, 0] - 1),movie_id)
-        movie_np = np.append(movie_np, last_record)
-
-        print('Movie numpy: {}'.format(movie_np))
-        print('Length: {}'.format(len(movie_np)))
-
-       # remove Movie ID rows
-        df = df[pd.notnull(df['Rating'])]
-        df['Movie_Id'] = movie_np.astype(int)
-        df['Cust_Id'] = df['Cust_Id'].astype(int)
-
-        # put column names in the desired order 
-        df = df[["Cust_Id", "Movie_Id", "Rating"]]
-
-        print('-Dataset examples resorted columns-')
-        print(df.iloc[::500000, :])
-
-        # save final formatted dataset
-        data_file = 'netflix_prize.txt'
-        df.to_csv(DATASET_SUBFOLDER + data_file, index=False)
-
-    exit(0)   
+        # load the dataset
+        data_path = DATASET_SUBFOLDER +  "ratings.csv"
+        
+        # format: userId,movieId,rating,timestamp
+        cols = ['user_id', 'movie_id', 'rating', 'timestamp']
+        ratings_df = pd.read_csv(data_path, delimiter=',', header=None, skiprows=1,
+                names=cols, usecols=cols[0:3], # do not consider timestamp 
+                engine='python')
 
     # if any test or train fold exists skip
     if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
@@ -192,10 +128,9 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 
         # if implicit dataset does not exist, create
         if not os.path.exists(DATASET_SUBFOLDER + implicit_data_file): 
-            
             # convert ratings into implicit
             ratings_df = convert_ratings_into_implicit(ratings_df) 
-            
+
             # rescale user and movie IDs to successive one ranged IDs
             ratings_df = rescale_ids(ratings_df)
 
@@ -205,9 +140,10 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 
             # TODO: remove explicit data (ratings.dat), implicit & zip files
 
-        # ratings five-fold splitting
-        k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
 
+        # ratings five-fold splitting
+        # k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
+    exit(0)
     return ratings_df    
 
 
@@ -240,6 +176,7 @@ def k_fold_splitting(data_dir, data_file):
 
 def rescale_ids(ratings_df):
     ''' create successive one ranged IDs for user_id and movie_id columns '''
+    
     untouched_ratings_df = ratings_df
     ratings_df = gen_new_user_id(ratings_df)
     movie_id_sorted_df = gen_new_movie_id(ratings_df)
@@ -249,13 +186,12 @@ def rescale_ids(ratings_df):
     final_ratings_df = ratings_df.merge(movie_id_sorted_df, on='movie_id', how='left') 
     
     # check correpondence between original and new ids
-    test_rescaling(untouched_ratings_df, final_ratings_df)
+    # test_rescaling(untouched_ratings_df, final_ratings_df) # TODO: only for movielens_dataset
 
     final_ratings_df = final_ratings_df[['NEW_user_id', 'NEW_movie_id', 'rating']]  
     final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # rename cols
 
     print("final_ratings_df\n", final_ratings_df)
-
     return final_ratings_df
 
 

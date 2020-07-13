@@ -168,7 +168,7 @@ elif data_name == 'netflix_prize':
     '''
     DATASET_SUBFOLDER = "../data/netflix_prize/"
    
-    if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
+    if not os.path.isdir(DATASET_SUBFOLDER):   # run just first time
         ratings_df = prepare_data(data_name, DATASET_SUBFOLDER=DATASET_SUBFOLDER)
     #else: 
         # ratings_df = load_movielens_10m_data()
