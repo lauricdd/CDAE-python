@@ -4,7 +4,6 @@ import argparse
 
 from utils.data_preprocessor import *
 from utils.data_manager import *
-
 from utils.Evaluation.Evaluator import EvaluatorHoldout
 from utils.utils import save_dictionary
 
@@ -20,12 +19,14 @@ warnings.filterwarnings('ignore')
                         
 #TODO: use easydict
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
+
+# model
 parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='CDAE')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
 parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize'], 
-                        default='movielens_10m')
+                        default='netflix_prize')
 
 
 ######################################################################
@@ -96,7 +97,6 @@ SLIMElasticNet_best_parameters_list = {
 }
 
 
-
 args = parser.parse_args()
 
 random_seed = args.random_seed
@@ -141,11 +141,21 @@ elif data_name == 'politic_old': # Politic2013
     num_total_ratings = 2779703
 
 elif data_name == 'movielens_10m': 
-    
-    data_path = "../data/movielens_10m/"
+
+    ''' 
+        load data from MovieLens 10M Dataset
+        http://grouplens.org/datasets/movielens/ 
+    '''
+
+    DATASET_URL = "http://files.grouplens.org/datasets/movielens/ml-10m.zip"
+    DATASET_SUBFOLDER = "../data/movielens_10m/"
+    DATASET_FILE_NAME = "movielens_10m.zip"  
+    DATASET_UNZIPPED_FOLDER = "ml-10M100K/"
+
+    cols = ['user_id', 'movie_id', 'rating', 'timestamp']
    
-    if not os.path.isdir(data_path): # run just first time
-        ratings_df = movielens_10m_prepare_data(data_name)
+    if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
+        ratings_df = prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER)
     else: 
         ratings_df = load_movielens_10m_data()
 
@@ -153,16 +163,20 @@ elif data_name == 'movielens_10m':
     num_users, num_items, num_total_ratings = movielens_10m_statistics(ratings_df)
 
 elif data_name == 'netflix_prize': 
-    
-    data_path = "../data/netflix_prize/"
+    ''' 
+        load data from Netflix prize Dataset
+        https://archive.org/download/nf_prize_dataset.tar/nf_prize_dataset.tar.gz
+    '''
 
-    print(data_path)
-
-    if not os.path.isdir(data_path): # run just once
-        ratings_df = netflix_prize_prepare_data(data_name)
-        
-    else: 
-        print("OK!!")
+    DATASET_URL = "https://archive.org/download/nf_prize_dataset.tar/nf_prize_dataset.tar.gz"
+    DATASET_SUBFOLDER = "../data/netflix_prize/"
+    DATASET_FILE_NAME = "nf_prize_dataset.tar.gz"  
+    DATASET_UNZIPPED_FOLDER = ""
+   
+    # if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
+    if os.path.isdir(DATASET_SUBFOLDER): 
+        ratings_df = prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER)
+    #else: 
         # ratings_df = load_movielens_10m_data()
 
     exit(0)
@@ -368,22 +382,20 @@ with tf.compat.v1.Session() as sess:
 
             # TODO: get initial weights using do_pretrain??
 
-        cdae_model = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
+        CDAE = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,
                     R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R,num_train_ratings,num_test_ratings,
                     train_epoch,batch_size, lr, optimizer_method, display_step, random_seed,
                     decay_epoch_step,lambda_value,
                     user_train_set, item_train_set, user_test_set, item_test_set,
                     result_path,data_name,model_name,test_fold,corruption_level) 
-                    
+
         # train and evaluate the model
-        cdae_model.run()
+        CDAE.run()
 
 
     # Sparse LInear Method: Machine learning approach to Item-based CF
-    elif model_name == "SLIMElasticNet":      
-        
-        print("Splitting dataset ... ")
+    elif model_name == "SLIMElasticNet":     
         
         # from sklearn.model_selection import train_test_split
         # Split dataset into train, validation and test with 0.6, 0.2, 0.2
@@ -391,16 +403,17 @@ with tf.compat.v1.Session() as sess:
         # URM_train, URM_validation = train_test_split(train_R, train_size = 0.8, test_size = 0.2, 
         #                                                 random_state = args.random_seed)
 
-
-        # Split dataset into train, validation and test
+        # Split dataset into train and test
         # Holdout data: for each user, randomly hold 20% of the ratings in the test set
+        print("Splitting dataset ... ")
         URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
-        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
  
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
         
         # hyperparameters tuning
+        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
+
         if args.apply_hyperparams_tuning == "True":
             apply_hyperparams_tuning = True
         else:

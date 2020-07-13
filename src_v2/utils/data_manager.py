@@ -3,44 +3,187 @@
 
 # data_manager.py: module for loading and preparing data. Also for displaying some statistics.
 
-from urllib.request import urlretrieve
+from urllib.request import urlretrieve, URLError
 import zipfile, os
-from subprocess import call
+import subprocess
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+import ssl
+import kaggle
+import numpy as np
 
 
-def movielens_10m_prepare_data(dataset):
+### GENERAL UTILS ### 
+
+def download_from_URL(URL, folder_path, file_name):
     '''
-    load data from MovieLens 10M Dataset
-    http://grouplens.org/datasets/movielens/
+    '''
+    
+    # use unverified ssl 
+    ssl._create_default_https_context = ssl._create_unverified_context
+
+    # if directory does not exist, create
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    print("Downloading: {}".format(URL))
+    print("In folder: {}".format(folder_path + file_name))
+
+    try:
+        urlretrieve(URL, folder_path + file_name)  # copy network object to a local file
+
+    except URLError as urlerror:  # @TODO: handle network connection error
+        print("Unable to complete automatic download, network error")
+        raise urlerror
+
+def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
+    '''
+    '''
+    # list datasets
+    # kaggle datasets list 
+    
+    if(dataset_name == "netflix_prize"):
+        print("\n="*100)
+        print("netflix-prize-data dataset files")
+        os.system("kaggle datasets files netflix-inc/netflix-prize-data")
+
+        # combined_data_x_.txt files contain the raitings, with format:
+        # MovieID1:
+        # CustomerID11,Date11
+        # CustomerID12,Date12
+        # ...
+        # MovieID2:
+        # CustomerID21,Date21
+        # CustomerID22,Date22
+
+        data_files = ['combined_data_{}.txt'.format(i) for i in range(1,5)] 
+        
+        for filename in data_files:
+            command =  "kaggle datasets download -f " + str(filename)+ " -p ../data/netflix_prize --unzip netflix-inc/netflix-prize-data"
+            os.system(command)
+
+        # --unzip not working. Unzip data files manually
+        unzip_all(DATASET_SUBFOLDER)  
+
+        print("="*100, "\n")
+
+
+def unzip_all(DATASET_SUBFOLDER):
+    '''
+        unzip all files in a given directory
+    '''
+    for filename in os.listdir(DATASET_SUBFOLDER):
+        if filename.endswith(".zip"):
+            print(filename + " unzipped")
+            # name = os.path.splitext(os.path.basename(filename))[0]
+            try:
+                zip = zipfile.ZipFile(DATASET_SUBFOLDER + filename)  # open zip file
+                zip.extractall(path=DATASET_SUBFOLDER)  # extract data
+
+                try:
+                    os.remove(DATASET_SUBFOLDER + filename)
+                    print(filename + " removed")
+                except OSError as e: 
+                    print("error: ", e) 
+
+            except(FileNotFoundError, zipfile.BadZipFile):
+                print("Unable to find data zip file")
+
+
+### PREPROCESSING ### 
+
+def prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER):
+    '''
+    load dataset from URL
     
     # :return: ratings_df
     '''
 
-    DATASET_URL = "http://files.grouplens.org/datasets/movielens/ml-10m.zip"
-    DATASET_SUBFOLDER = "../data/movielens_10m/"
-    DATASET_FILE_NAME = "movielens_10m.zip"  
-    DATASET_UNZIPPED_FOLDER = "ml-10M100K/"
+    if data_name == "movielens_10m":
 
-    try:
-        data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
-
-    except(FileNotFoundError, zipfile.BadZipFile):
-        print("Unable to find data zip file. Downloading...")
-        download_from_URL(URL=DATASET_URL, folder_path=DATASET_SUBFOLDER, file_name=DATASET_FILE_NAME)
+        try:
+            data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
+        except(FileNotFoundError, zipfile.BadZipFile):
+            print("Unable to find data zip file. Downloading...")
+            download_from_URL(URL=DATASET_URL, folder_path=DATASET_SUBFOLDER, file_name=DATASET_FILE_NAME)
+            
+            data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
         
-        data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
-    
-    data_path = data_file.extract(DATASET_UNZIPPED_FOLDER + "ratings.dat", 
-                                    path=DATASET_SUBFOLDER)  # extract data
+        data_path = data_file.extract(DATASET_UNZIPPED_FOLDER + "ratings.dat", 
+                                        path=DATASET_SUBFOLDER)  # extract data
 
-    # load the dataset
-    cols = ['user_id', 'movie_id', 'rating', 'timestamp']
-    ratings_df = pd.read_csv(data_path, delimiter='::', header=None, 
-            names=cols, usecols=cols[0:3], # do not consider timestamp 
-            engine='python')
+        # load the dataset
+        # format: user_id,movie_id,rating,timestamp
+        cols = ['user_id', 'movie_id', 'rating', 'timestamp']
+        ratings_df = pd.read_csv(data_path, delimiter='::', header=None, 
+                names=cols, usecols=cols[0:3], # do not consider timestamp 
+                engine='python')
 
+    elif data_name == "netflix_prize":
+        
+        # download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
+
+        # Now combine datasets    
+        df1 = pd.read_csv(DATASET_SUBFOLDER +'combined_data_1.txt', header = None, 
+                            names = ['Cust_Id', 'Rating'], usecols = [0,1]) # skip date
+        df2 = pd.read_csv(DATASET_SUBFOLDER + 'combined_data_2.txt', header = None, 
+                            names = ['Cust_Id', 'Rating'], usecols = [0,1])
+        df3 = pd.read_csv(DATASET_SUBFOLDER + 'combined_data_3.txt', header = None, 
+                            names = ['Cust_Id', 'Rating'], usecols = [0,1])
+        df4 = pd.read_csv(DATASET_SUBFOLDER + 'combined_data_4.txt', header = None, 
+                            names = ['Cust_Id', 'Rating'], usecols = [0,1])
+        # print('Dataset 1 shape: {}'.format(df1.shape))
+
+        df1['Rating'] = df1['Rating'].astype(float)
+        df2['Rating'] = df2['Rating'].astype(float)
+        df3['Rating'] = df3['Rating'].astype(float)
+        df4['Rating'] = df4['Rating'].astype(float)
+
+        df = df1
+        df = df1.append(df2)
+        df = df.append(df3)
+        df = df.append(df4)
+
+        df.index = np.arange(0,len(df))
+        print('Full dataset shape: {}'.format(df.shape))
+
+        # data cleaning
+        df_nan = pd.DataFrame(pd.isnull(df.Rating))
+        df_nan = df_nan[df_nan['Rating'] == True]
+        df_nan = df_nan.reset_index()
+
+        movie_np = []
+        movie_id = 1
+
+        for i,j in zip(df_nan['index'][1:],df_nan['index'][:-1]):
+            # numpy approach
+            temp = np.full((1,i-j-1), movie_id)
+            movie_np = np.append(movie_np, temp)
+            movie_id += 1
+
+        # Account for last record and corresponding length
+        # numpy approach
+        last_record = np.full((1,len(df) - df_nan.iloc[-1, 0] - 1),movie_id)
+        movie_np = np.append(movie_np, last_record)
+
+        print('Movie numpy: {}'.format(movie_np))
+        print('Length: {}'.format(len(movie_np)))
+
+       # remove Movie ID rows
+        df = df[pd.notnull(df['Rating'])]
+        df['Movie_Id'] = movie_np.astype(int)
+        df['Cust_Id'] = df['Cust_Id'].astype(int)
+
+        # put column names in the desired order 
+        df = df[["Cust_Id", "Movie_Id", "Rating"]]
+
+        print('-Dataset examples resorted columns-')
+        print(df.iloc[::500000, :])
+
+        # save final formatted dataset
+        data_file = 'netflix_prize.txt'
+        df.to_csv(DATASET_SUBFOLDER + data_file, index=False)
+
+    exit(0)   
 
     # if any test or train fold exists skip
     if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
@@ -64,42 +207,7 @@ def movielens_10m_prepare_data(dataset):
         # ratings five-fold splitting
         k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
 
-
-    ####################################################################################################
-    # https://botbark.com/2019/12/28/scaling-data-range-using-min-max-scaler/
-    # Scale features to a range using MinMaxScaler
-    # Transform features by scaling each feature to a given range
-    # This range can be set by specifying the feature_range parameter (default at (0,1)).
-    # num_users = unique_values(ratings_df["user_id"])
-    # user_id_scaler = MinMaxScaler(feature_range=(1, num_items), copy=False)
-    # ratings_df["user_id"] = user_id_scaler.fit_transform(ratings_df["user_id"].values.reshape(-1, 1))
-
-    # print("\nafter scaling ...\n")
-    # print(ratings_df[100:])
-    # min_max = ratings_df.describe().loc[['min','max']]
-    # print("min_max values after scaling... \n", min_max)
-
-    ####################################################################################################
-
     return ratings_df    
-
-
-def download_from_URL(URL, folder_path, file_name):
-    '''
-    '''
-    # if directory does not exist, create
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-
-    print("Downloading: {}".format(URL))
-    print("In folder: {}".format(folder_path + file_name))
-
-    try:
-        urlretrieve(URL, folder_path + file_name)  # copy network object to a local file
-
-    except urllib.request.URLError as urlerror:  # @TODO: handle network connection error
-        print("Unable to complete automatic download, network error")
-        raise urlerror
 
 
 def convert_ratings_into_implicit(ratings_df):
@@ -123,7 +231,7 @@ def k_fold_splitting(data_dir, data_file):
     cmd = os.path.join(dirname, 'split_ratings.sh')
     
     # execute a Unix shell script
-    call(['bash', cmd, 
+    subprocess.call(['bash', cmd, 
         data_dir[:-1], # param 1 
         data_file # param 2
     ])
@@ -222,6 +330,8 @@ def unique_values(column):
     
     return count
 
+
+### LOADING / STATISTICS ###
     
 def load_movielens_10m_data():
     '''load implicit MovieLens dataset in a pandas dataframe '''
@@ -238,7 +348,6 @@ def movielens_10m_statistics(ratings_df):
 
     print("=" * 100)
     print("Movielens_10m statistics ...")
-    print("=" * 100)
     
     # min and max value for each colum of a given dataframe
     min_max = ratings_df.describe().loc[['min','max']]#.astype(int)
@@ -254,6 +363,7 @@ def movielens_10m_statistics(ratings_df):
     )
 
     print(statistics_string)
+    print("=" * 100)
 
     return num_users, num_items, num_total_ratings
 

@@ -22,9 +22,11 @@ env/
 .DS_Store
 
 # Ignore directories
-data/movielens_10m
+data/
 results/
 
 # Ignore tf v2.0 upgrade log
 app.log
 
+# kaggle API credentials
+kaggle.json

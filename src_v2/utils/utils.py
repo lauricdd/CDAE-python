@@ -263,7 +263,7 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
         plt.clf()
 
 
- def save_dictionary(result_path, best_parameters_dict, result_dict):
+def save_dictionary(result_path, best_parameters_dict, result_dict, args):
     
     if not os.path.exists(result_path):
         os.makedirs(result_path)
@@ -280,10 +280,13 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
 
     if(args.model_name == 'SLIMElasticNet'): 
 
-        model = zip(model_params_dict, best_parameters_dict)
-
         with open(model_info, 'a') as f:
-            for k,v in model.items():
+            
+            for k,v in model_params_dict.items():
+                s = str(k) + "   " + str(v) + "\n"
+                f.write(s)
+
+            for k,v in best_parameters_dict.items():
                 s = str(k) + "   " + str(v) + "\n"
                 f.write(s)
 
@@ -297,7 +300,6 @@ def make_records(result_path,test_acc_list,test_rmse_list,test_mae_list,test_avg
                 s = str(k) + "   " + str(v) + "\n"
                 f.write(s)
           
-
 
 def variable_save(result_path,model_name,train_var_list1,train_var_list2,Estimated_R,test_v_ud,mask_test_v_ud):
     for var in train_var_list1:
