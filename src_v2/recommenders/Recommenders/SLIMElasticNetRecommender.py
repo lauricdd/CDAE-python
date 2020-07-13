@@ -34,6 +34,10 @@ class SLIMElasticNetRecommender(BaseItemSimilarityMatrixRecommender):
         super(SLIMElasticNetRecommender, self).__init__(URM_train, verbose=verbose)
 
     def fit(self, l1_ratio=0.1, alpha=1.0, positive_only=True, topK=100):
+        # to control the L1 and L2 penalty separately
+        # a * L1 + b * L2
+        # alpha = a + b and l1_ratio = a / (a + b)
+        
         assert l1_ratio >= 0 and l1_ratio <= 1, "{}: l1_ratio must be between 0 and 1, provided value was {}".format(
             self.RECOMMENDER_NAME, l1_ratio)
 

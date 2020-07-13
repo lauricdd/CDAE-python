@@ -1,7 +1,8 @@
 import tensorflow as tf
 import time
 import numpy as np
-from utils.utils import *
+# from utils.utils import *
+from utils.utils import make_records, SDAE_calculate, evaluation, top_k_evaluation
 from numpy import inf
 
 class CDAE():
@@ -206,6 +207,17 @@ class CDAE():
         self.test_avg_loglike_list.append(AVG_loglikelihood)
 
         # Ranking metrics
+        # from utils.Evaluation.Evaluator import EvaluatorHoldout
+        
+        # evaluator_test = EvaluatorHoldout(self.test_R, cutoff_list=[5, 10])
+        # result_dict, _ = evaluator_test.evaluateRecommender(CDAE)
+        
+        # print("CDAE result_dict MAP@5 {}".format(result_dict[5]["MAP"]))    
+        # print("CDAE result_dict MAP@10 {}".format(result_dict[10]["MAP"]))
+
+        # self.test_map_at_5_list.append(result_dict[5]["MAP"])
+        # self.test_map_at_10_list.append(result_dict[10]["MAP"])
+
         MAP_at_5 = top_k_evaluation(self.test_R, Estimated_R, k=5)
         MAP_at_10 = top_k_evaluation(self.test_R, Estimated_R, k=10)
         
@@ -237,6 +249,9 @@ class CDAE():
             self.earlystop_switch = True
             print ("========== Early Stopping at Epoch %d" %itr)
 
+
+    def get_URM_train(self):
+        return self.R_train.copy()
 
     def l2_norm(self,tensor):
         return tf.sqrt(tf.reduce_sum(input_tensor=tf.square(tensor)))
