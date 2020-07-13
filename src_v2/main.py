@@ -164,18 +164,12 @@ elif data_name == 'movielens_10m':
 
 elif data_name == 'netflix_prize': 
     ''' 
-        load data from Netflix prize Dataset
-        https://archive.org/download/nf_prize_dataset.tar/nf_prize_dataset.tar.gz
+        load data from netflix prize Dataset using kaggle
     '''
-
-    DATASET_URL = "https://archive.org/download/nf_prize_dataset.tar/nf_prize_dataset.tar.gz"
     DATASET_SUBFOLDER = "../data/netflix_prize/"
-    DATASET_FILE_NAME = "nf_prize_dataset.tar.gz"  
-    DATASET_UNZIPPED_FOLDER = ""
    
-    # if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
-    if os.path.isdir(DATASET_SUBFOLDER): 
-        ratings_df = prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER)
+    if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
+        ratings_df = prepare_data(data_name, DATASET_SUBFOLDER=DATASET_SUBFOLDER)
     #else: 
         # ratings_df = load_movielens_10m_data()
 

@@ -42,7 +42,8 @@ def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
     # kaggle datasets list 
     
     if(dataset_name == "netflix_prize"):
-        print("\n="*100)
+        print("\n")
+        print("="*100)
         print("netflix-prize-data dataset files")
         os.system("kaggle datasets files netflix-inc/netflix-prize-data")
 
@@ -91,7 +92,7 @@ def unzip_all(DATASET_SUBFOLDER):
 
 ### PREPROCESSING ### 
 
-def prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER):
+def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FILE_NAME=None, DATASET_UNZIPPED_FOLDER=None):
     '''
     load dataset from URL
     
@@ -120,7 +121,7 @@ def prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, D
 
     elif data_name == "netflix_prize":
         
-        # download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
+        download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
 
         # Now combine datasets    
         df1 = pd.read_csv(DATASET_SUBFOLDER +'combined_data_1.txt', header = None, 
