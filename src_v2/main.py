@@ -21,7 +21,7 @@ warnings.filterwarnings('ignore')
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
 
 # model
-parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='CDAE')
+parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default='SLIMElasticNet')
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
@@ -85,7 +85,7 @@ parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 # SLIM parameters
 ######################################################################
 
-parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='True')
 
 # best hyperparamas config evaluated with evaluator_test. 
 SLIMElasticNet_best_parameters_list = {
@@ -93,7 +93,9 @@ SLIMElasticNet_best_parameters_list = {
     'politic_old': {'topK': 1000, 'l1_ratio': 1e-05, 'alpha': 0.001}, 
     
     # using random splitting on the entire dataset (using R matrix)
-    'movielens_10m': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258} 
+    'movielens_10m': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258},
+
+    # 'netflix_prize': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258}  
 }
 
 
@@ -140,40 +142,36 @@ elif data_name == 'politic_old': # Politic2013
     num_items = 7162
     num_total_ratings = 2779703
 
-elif data_name == 'movielens_10m': 
+elif data_name == 'movielens_10m' or data_name == 'netflix_prize': 
 
-    ''' 
-        load data from MovieLens 10M Dataset
-        http://grouplens.org/datasets/movielens/ 
-    '''
+    if data_name == 'movielens_10m':
+        ''' 
+            load data from MovieLens 10M Dataset
+            http://grouplens.org/datasets/movielens/ 
+        '''
 
-    DATASET_URL = "http://files.grouplens.org/datasets/movielens/ml-10m.zip"
-    DATASET_SUBFOLDER = "../data/movielens_10m/"
-    DATASET_FILE_NAME = "movielens_10m.zip"  
-    DATASET_UNZIPPED_FOLDER = "ml-10M100K/"
+        DATASET_URL = "http://files.grouplens.org/datasets/movielens/ml-10m.zip"
+        DATASET_SUBFOLDER = "../data/movielens_10m/"
+        DATASET_FILE_NAME = "movielens_10m.zip"  
+        DATASET_UNZIPPED_FOLDER = "ml-10M100K/"
 
-    cols = ['user_id', 'movie_id', 'rating', 'timestamp']
-   
+    elif data_name == 'netflix_prize': 
+        '''
+            load data from netflix prize dataset using kaggle
+        '''
+
+        DATASET_URL = None
+        DATASET_SUBFOLDER = "../data/netflix_prize/"
+        DATASET_FILE_NAME = None
+        DATASET_UNZIPPED_FOLDER = None
+    
     if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
         ratings_df = prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER)
     else: 
-        ratings_df = load_movielens_10m_data()
+        ratings_df = load_data(DATASET_SUBFOLDER)
 
     # Data exploration (summary statitics) 
-    num_users, num_items, num_total_ratings = movielens_10m_statistics(ratings_df)
-
-elif data_name == 'netflix_prize': 
-    ''' 
-        load data from netflix prize Dataset using kaggle
-    '''
-    DATASET_SUBFOLDER = "../data/netflix_prize/"
-   
-    if not os.path.isdir(DATASET_SUBFOLDER):   # run just first time
-        ratings_df = prepare_data(data_name, DATASET_SUBFOLDER=DATASET_SUBFOLDER)
-    #else: 
-        # ratings_df = load_movielens_10m_data()
-
-    exit(0)
+    num_users, num_items, num_total_ratings = dataset_statistics(data_name, ratings_df)
 
 else:
     raise NotImplementedError("ERROR")

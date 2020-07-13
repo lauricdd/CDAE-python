@@ -47,7 +47,7 @@ def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
         print("netflix-prize dataset files\n")
         os.system("kaggle datasets files lauraschiatti/netflix-prize")
 
-        data_files = ["ratings.csv"] 
+        data_files = ["ratings.csv"] #, "ratings_small.csv"]  
         for filename in data_files:
             command =  "kaggle datasets download -f " + str(filename)+ " -p ../data/netflix_prize --unzip lauraschiatti/netflix-prize"
             os.system(command)
@@ -56,6 +56,8 @@ def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
         unzip_all(DATASET_SUBFOLDER)  
 
         print("="*100, "\n")
+
+        return DATASET_SUBFOLDER + data_files[0]
 
 
 def unzip_all(DATASET_SUBFOLDER):
@@ -111,11 +113,9 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 
     elif data_name == "netflix_prize":
         
-        download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
-
         # load the dataset
-        data_path = DATASET_SUBFOLDER +  "ratings.csv"
-        
+        data_path = download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
+
         # format: userId,movieId,rating,timestamp
         cols = ['user_id', 'movie_id', 'rating', 'timestamp']
         ratings_df = pd.read_csv(data_path, delimiter=',', header=None, skiprows=1,
@@ -140,10 +140,9 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 
             # TODO: remove explicit data (ratings.dat), implicit & zip files
 
-
         # ratings five-fold splitting
         # k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
-    exit(0)
+
     return ratings_df    
 
 
@@ -270,21 +269,21 @@ def unique_values(column):
 
 ### LOADING / STATISTICS ###
     
-def load_movielens_10m_data():
-    '''load implicit MovieLens dataset in a pandas dataframe '''
-    ratings_df = pd.read_csv("../data/movielens_10m/ratings_implicit.txt", delimiter="\t", header=None,
+def load_data(DATASET_SUBFOLDER):
+    '''load implicit dataset in a pandas dataframe '''
+    ratings_df = pd.read_csv(DATASET_SUBFOLDER + "ratings_implicit.txt", delimiter="\t", header=None,
             names=['user_id', 'movie_id', 'rating'])
 
     return ratings_df
 
 
-def movielens_10m_statistics(ratings_df):
+def dataset_statistics(data_name, ratings_df):
     num_users = unique_values(ratings_df["user_id"])
     num_items = unique_values(ratings_df["movie_id"])
     num_total_ratings =  ratings_df.shape[0]
 
     print("=" * 100)
-    print("Movielens_10m statistics ...")
+    print(data_name + " statistics ...")
     
     # min and max value for each colum of a given dataframe
     min_max = ratings_df.describe().loc[['min','max']]#.astype(int)
