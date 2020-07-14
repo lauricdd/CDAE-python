@@ -48,7 +48,7 @@ def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
         print("netflix-prize dataset files\n")
         os.system("kaggle datasets files lauraschiatti/netflix-prize")
 
-        data_files = ["ratings.csv"] #, "ratings_small.csv"]  
+        data_files = ["netflix_prize.txt"] 
         for filename in data_files:
             command =  "kaggle datasets download -f " + str(filename)+ " -p ../data/netflix_prize --unzip lauraschiatti/netflix-prize"
             os.system(command)

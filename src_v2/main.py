@@ -85,7 +85,7 @@ parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 # SLIM parameters
 ######################################################################
 
-parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='True')
 # TODO: not working for netflix_prize 
 # EvaluatorHoldout: WARNING: No users had a sufficient number of relevant items
 
@@ -174,8 +174,6 @@ elif data_name == 'movielens_10m' or data_name == 'netflix_prize':
 
     # Data exploration (summary statitics) 
     num_users, num_items, num_total_ratings = dataset_statistics(data_name, ratings_df)
-
-    exit(0)
 
 else:
     raise NotImplementedError("ERROR")
