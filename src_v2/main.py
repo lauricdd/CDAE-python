@@ -85,7 +85,9 @@ parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 # SLIM parameters
 ######################################################################
 
-parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='True')
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
+# TODO: not working for netflix_prize 
+# EvaluatorHoldout: WARNING: No users had a sufficient number of relevant items
 
 # best hyperparamas config evaluated with evaluator_test. 
 SLIMElasticNet_best_parameters_list = {
@@ -95,7 +97,7 @@ SLIMElasticNet_best_parameters_list = {
     # using random splitting on the entire dataset (using R matrix)
     'movielens_10m': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258},
 
-    # 'netflix_prize': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258}  
+    'netflix_prize': {'topK': 209, 'l1_ratio': 0.011269764260753398, 'alpha': 0.011248017606952841}
 }
 
 
@@ -172,6 +174,8 @@ elif data_name == 'movielens_10m' or data_name == 'netflix_prize':
 
     # Data exploration (summary statitics) 
     num_users, num_items, num_total_ratings = dataset_statistics(data_name, ratings_df)
+
+    exit(0)
 
 else:
     raise NotImplementedError("ERROR")
@@ -428,9 +432,6 @@ with tf.compat.v1.Session() as sess:
         
         print("{} result_dict MAP@5 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[5]["MAP"]))    
         print("{} result_dict MAP@10 {}".format(SLIMElasticNet.RECOMMENDER_NAME, result_dict[10]["MAP"]))
-
-        # SLIMElasticNetRecommender result_dict MAP@5 0.5152164713541642
-        # SLIMElasticNetRecommender result_dict MAP@10 0.47914679402576965
 
         result_path = '../results/' + data_name + '/' + model_name + '/' + str(current_time) + '/'
         save_dictionary(result_path, best_parameters_SLIMElasticNet, result_dict, args)

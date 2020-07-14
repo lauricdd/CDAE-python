@@ -237,6 +237,9 @@ class EvaluatorHoldout(Evaluator):
             block_size = min(1000, int(1e8 / self.n_items))
             block_size = min(block_size, len(usersToEvaluate))
 
+        print("_run_evaluation_on_selected_users ...")
+        print("block_size", block_size)
+
         start_time = time.time()
         start_time_print = time.time()
 
@@ -366,6 +369,8 @@ class EvaluatorHoldout(Evaluator):
 
                     start_time_print = time.time()
 
+        print("n_users_evaluated", n_users_evaluated)
+        
         return results_dict, n_users_evaluated
 
     def evaluateRecommender(self, recommender_object):

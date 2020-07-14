@@ -35,6 +35,7 @@ def download_from_URL(URL, folder_path, file_name):
         print("Unable to complete automatic download, network error")
         raise urlerror
 
+
 def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
     '''
     '''
@@ -132,6 +133,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
             ratings_df = convert_ratings_into_implicit(ratings_df) 
 
             # rescale user and movie IDs to successive one ranged IDs
+            #if data_name == 'movielens_10m': # no need to rescale netflix_prize dataset 
             ratings_df = rescale_ids(ratings_df)
 
             # save new formatted file
@@ -141,7 +143,8 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
             # TODO: remove explicit data (ratings.dat), implicit & zip files
 
         # ratings five-fold splitting
-        # k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
+        if data_name == 'movielens_10m': # no need to do k_fold splitting for netflix_prize dataset 
+            k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
 
     return ratings_df    
 
