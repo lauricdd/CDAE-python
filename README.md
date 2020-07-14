@@ -35,7 +35,7 @@ Open source code folder
     
 ## Kaggle setup to use datasets
 
-Create kaggle.json file with custom credentials
+Create kaggle.json file with custom kaggle API credentials:
 
     nano kaggle.json 
     
@@ -50,6 +50,11 @@ Copy kaggle.json into the folder where the API expects to find it.
     chmod 600 ~/.kaggle/kaggle.json
     ls ~/.kaggle
 
+Check files of the netflix prize dataset available in kaggle  (netflix-inc/netflix-prize-data)
+
+    kaggle datasets files netflix-inc/netflix-prize-data
+    
+    
 ## Setup
     
 Install virtualenv using pip3 
