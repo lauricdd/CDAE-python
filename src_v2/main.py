@@ -26,7 +26,7 @@ parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
 parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize'], 
-                        default='netflix_prize')
+                        default='movielens_10m')
 
 
 ######################################################################
@@ -238,7 +238,7 @@ def split_train_validation_random_holdout(URM, train_split):
 
     return URM_train, URM_test
 
-
+#######################################################################
  
 def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
@@ -431,9 +431,9 @@ with tf.compat.v1.Session() as sess:
 
         import scipy.sparse as sps
         # convert to CSR format 
-        URM_train = URM_train.tocsr()
-        URM_validation = URM_validation.tocsr()
-        URM_test = URM_test.tocsr()
+        URM_train = sps.csr_matrix(URM_train)
+        URM_validation = sps.csr_matrix(URM_validation)
+        URM_test = sps.csr_matrix(URM_test)
 
         print("URM_train", type(URM_train))
         print("URM_validation", type(URM_validation))
