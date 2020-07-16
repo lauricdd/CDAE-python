@@ -151,8 +151,8 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         print("="*100)
 
         # rescale movie_id
-        riginal_movie_id_is_sorted = ratings_df["movie_id"].is_monotonic
-        final_ratings_df = rescale_ids(final_ratings_df, "movie_id", riginal_movie_id_is_sorted) 
+        original_movie_id_is_sorted = ratings_df["movie_id"].is_monotonic
+        final_ratings_df = rescale_ids(final_ratings_df, "movie_id", original_movie_id_is_sorted) 
         print(final_ratings_df)
         print("="*100)
 
@@ -165,12 +165,13 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
                 header=None, sep="\t") # use \t as separator as in politic_old and politic_new
 
         # remove explicit dataset file
-        remove_file(filepath)
+        # remove_file(filepath)
 
-    # if any test or train fold exists skip
-    # if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
-        # ratings five-fold splitting
-        # k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
+    if data_name == "movielens_10m":
+        # if any test or train fold exists skip
+        if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
+            # ratings five-fold splitting
+            k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
 
     return final_ratings_df    
 
