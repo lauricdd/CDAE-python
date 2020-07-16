@@ -400,7 +400,7 @@ with tf.compat.v1.Session() as sess:
         # URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
 
         from sklearn.model_selection import train_test_split
-        # Split dataset into train, validation and test with 0.6, 0.2, 0.2
+        # Split dataset into train, validation and test with 0.8, 0.1, 0.1
         URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
     
         # SLIM model
@@ -408,7 +408,7 @@ with tf.compat.v1.Session() as sess:
         
         # hyperparameters tuning
         # URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
-        URM_train, URM_validation = train_test_split(URM_train, train_size = 0.8, test_size = 0.2, 
+        URM_train, URM_validation = train_test_split(URM_train, train_size = 0.9, test_size = 0.1, 
                                                     random_state = args.random_seed)
 
         if args.apply_hyperparams_tuning == "True":
