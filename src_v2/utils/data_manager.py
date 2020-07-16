@@ -26,7 +26,7 @@ def download_from_URL(URL, folder_path, file_name):
         os.makedirs(folder_path)
 
     print("Downloading: {}".format(URL))
-    print("In folder: {}".format(folder_path + file_name))
+    print("In folder: {}".format(folder_path))
 
     try:
         urlretrieve(URL, folder_path + file_name)  # copy network object to a local file
@@ -68,19 +68,23 @@ def unzip_all(DATASET_SUBFOLDER):
     for filename in os.listdir(DATASET_SUBFOLDER):
         if filename.endswith(".zip"):
             print(filename + " unzipped")
-            # name = os.path.splitext(os.path.basename(filename))[0]
             try:
                 zip = zipfile.ZipFile(DATASET_SUBFOLDER + filename)  # open zip file
                 zip.extractall(path=DATASET_SUBFOLDER)  # extract data
 
-                try:
-                    os.remove(DATASET_SUBFOLDER + filename)
-                    print(filename + " removed")
-                except OSError as e: 
-                    print("error: ", e) 
+                filepath = DATASET_SUBFOLDER + filename
+                remove_file(filepath)
 
             except(FileNotFoundError, zipfile.BadZipFile):
                 print("Unable to find data zip file")
+
+
+def remove_file(filepath):
+    try:
+        os.remove(filepath)
+        print(filepath + " removed")
+    except OSError as e: 
+        print("error: ", e) 
 
 
 ### PREPROCESSING ### 
@@ -96,57 +100,81 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 
         try:
             data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
+        
         except(FileNotFoundError, zipfile.BadZipFile):
             print("Unable to find data zip file. Downloading...")
             download_from_URL(URL=DATASET_URL, folder_path=DATASET_SUBFOLDER, file_name=DATASET_FILE_NAME)
             
             data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
         
-        data_path = data_file.extract(DATASET_UNZIPPED_FOLDER + "ratings.dat", 
-                                        path=DATASET_SUBFOLDER)  # extract data
+        filepath = data_file.extract(DATASET_UNZIPPED_FOLDER + "ratings.dat", 
+                                        path=DATASET_SUBFOLDER)  # extract data      
 
         # load the dataset
         # format: user_id::movie_id::rating::timestamp
         cols = ['user_id', 'movie_id', 'rating', 'timestamp']
-        ratings_df = pd.read_csv(data_path, delimiter='::', header=None, 
+        ratings_df = pd.read_csv(filepath, delimiter='::', header=None, 
                 names=cols, usecols=cols[0:3], # do not consider timestamp 
                 engine='python')
+
+        # remove zip file 
+        filepath = DATASET_SUBFOLDER + DATASET_FILE_NAME
+        remove_file(filepath)
 
     elif data_name == "netflix_prize":
         
         # load the dataset
-        data_path = download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
+        filepath = download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
+        
+        # format: Cust_Id,Movie_Id,rating,timestamp
+        keep_col = ['Cust_Id','Movie_Id','Rating']
+        ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
+        ratings_df.rename(columns={'Cust_Id': 'user_id', 'Movie_Id': 'movie_id', 'Rating': 'rating'}, inplace=True)
 
-        # format: userId,movieId,rating,timestamp
-        cols = ['user_id', 'movie_id', 'rating', 'timestamp']
-        ratings_df = pd.read_csv(data_path, delimiter=',', header=None, skiprows=1,
-                names=cols, usecols=cols[0:3], # do not consider timestamp 
-                engine='python')
+        
+    implicit_data_file = 'ratings_implicit.txt'
+    
+    # if implicit dataset does not exist, create
+    if not os.path.exists(DATASET_SUBFOLDER + implicit_data_file): 
+        
+        # convert ratings into implicit
+        ratings_df = convert_ratings_into_implicit(ratings_df) 
+        print(ratings_df)
+        print("="*100)
+
+        # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
+        
+        # rescale user_id  
+        final_ratings_df = rescale_ids(ratings_df, "user_id")  
+        print(final_ratings_df)
+        print("="*100)
+
+        # rescale movie_id
+        final_ratings_df = rescale_ids(final_ratings_df, "movie_id") 
+        print(final_ratings_df)
+        print("="*100)
+
+        # final columns renaming
+        final_ratings_df.columns = ['user_id', 'movie_id', 'rating']
+        print(final_ratings_df)
+
+        # check correpondence between original and new IDs
+        if data_name == "movielens_10m": # only for movielens_dataset since considers specific tuples
+            test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
+
+        # save new formatted file
+        final_ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False, 
+                header=None, sep="\t") # use \t as separator as in politic_old and politic_new
+
+        # remove explicit dataset file
+        remove_file(filepath)
 
     # if any test or train fold exists skip
-    if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
-        implicit_data_file = 'ratings_implicit.txt'
-
-        # if implicit dataset does not exist, create
-        if not os.path.exists(DATASET_SUBFOLDER + implicit_data_file): 
-            # convert ratings into implicit
-            ratings_df = convert_ratings_into_implicit(ratings_df) 
-
-            # rescale user and movie IDs to successive one ranged IDs
-            #if data_name == 'movielens_10m': # no need to rescale netflix_prize dataset 
-            ratings_df = rescale_ids(ratings_df)
-
-            # save new formatted file
-            ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False,  
-                    header=None, sep="\t") # use \t as separator as in politic_old and politic_new
-
-            # TODO: remove explicit data (ratings.dat), implicit & zip files
-
+    # if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
         # ratings five-fold splitting
-        if data_name == 'movielens_10m': # no need to do k_fold splitting for netflix_prize dataset 
-            k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
+        # k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
 
-    return ratings_df    
+    return final_ratings_df    
 
 
 def convert_ratings_into_implicit(ratings_df):
@@ -176,60 +204,84 @@ def k_fold_splitting(data_dir, data_file):
     ])
 
 
-def rescale_ids(ratings_df):
-    ''' create successive one ranged IDs for user_id and movie_id columns '''
+### RESCALING ###
+
+def gen_new_id(ratings_df, id_name):
+    sorted_id = ratings_df[id_name].is_monotonic
     
-    untouched_ratings_df = ratings_df
-    ratings_df = gen_new_user_id(ratings_df)
-    movie_id_sorted_df = gen_new_movie_id(ratings_df)
+    # check if the values in the index are monotonically increasing 
+    if not sorted_id:
+        print("{} in ascending order BEFORE sorting?: {} \n".format(id_name, sorted_id))
 
-    # set NEW_movie_id values based on its corresponding movie_id by means of a
-    # left join on movie_id (only column name in  both dataframes)
-    final_ratings_df = ratings_df.merge(movie_id_sorted_df, on='movie_id', how='left') 
+        # create an object, id_name_df, that only contains the `id_name` column sorted
+        id_name_sorted_df = ratings_df.sort_values(by=id_name)[[id_name]] 
+
+        # check whether id_name is actually ordered
+        print("{} in ascending order AFTER sorting?: {}".format(id_name, id_name_sorted_df[id_name].is_monotonic))  
+    else:
+        print("NO sorting needed for {} \n".format(id_name))
+        id_name_sorted_df = ratings_df
+
+    # remove duplicated IDs
+    print("{}_sorted_df shape BEFORE removing duplicates: {}".format(id_name, id_name_sorted_df.shape))
+    id_name_sorted_df = id_name_sorted_df.drop_duplicates() 
+    print("{}_sorted_df shape AFTER removing duplicates: {}".format(id_name, id_name_sorted_df.shape))
+
+    # create `NEW_id_name` column with values which increments by one 
+    # for every change in value of id_name column. 
+    i = id_name_sorted_df[id_name]
+    new_id_name = 'NEW_' + id_name
+    id_name_sorted_df[new_id_name] = i.ne(i.shift()).cumsum()-1 # start IDs from 0
     
-    # check correpondence between original and new ids
-    # test_rescaling(untouched_ratings_df, final_ratings_df) # TODO: only for movielens_dataset
-
-    final_ratings_df = final_ratings_df[['NEW_user_id', 'NEW_movie_id', 'rating']]  
-    final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # rename cols
-
-    print("final_ratings_df\n", final_ratings_df)
-    return final_ratings_df
+    return id_name_sorted_df
 
 
-def gen_new_user_id(ratings_df):
-    # check whether user_id index is sorted in ascending order
-    print("user_id in ascending order BEFORE sorting?: ", ratings_df.user_id.is_monotonic) 
-    # create NEW_user_id column with values which increments by one 
-    # for every change in value of user_id column. 
-    i = ratings_df.user_id  
-    ratings_df['NEW_user_id'] = i.ne(i.shift()).cumsum()-1 # start ID from 0
+def rescale_ids(ratings_df, id_name):
+    ''' 
+        create successive one ranged IDs for user_id and movie_id columns 
+    '''
 
-    return ratings_df
+    min_value = ratings_df[id_name].min()
+    max_value = ratings_df[id_name].max()
+    unique_values = ratings_df[id_name].nunique() #num_users
+
+    # create NEW_index for `id_name` attribute
+    if (max_value-min_value) > unique_values: # TODO: >=???
+        
+        string = "rescaling {} ... \nmin_value: {} \nmax_value: {}  \
+                \nunique_values: {}\n".format(id_name,min_value, max_value,unique_values)
+        print(string)
+        
+        id_name_sorted_df = gen_new_id(ratings_df, id_name)
+        print("id_name_sorted_df ... \n", id_name_sorted_df)
+
+        # set `NEW_id_name` values based on its corresponding `id_name` by means of a
+        # left join on `id_name` (only column name in both dataframes)
+        final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
+        
+        # just append `NEW_id_name` to the original dataframe
+        # else:
+        #     print("entró elseeee")
+        #     final_ratings_df = pd.concat([ratings_df, id_name_sorted_df['NEW_' + id_name]], axis=1, sort=False)
+
+        if id_name == 'user_id' and 'NEW_user_id' in final_ratings_df.columns: 
+                final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
+
+        
+        elif id_name == 'movie_id' and 'NEW_movie_id' in final_ratings_df.columns: 
+                final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
 
 
-def gen_new_movie_id(ratings_df):
-    print("movie_id in ascending order BEFORE sorting?: ", ratings_df.movie_id.is_monotonic)
-    
-    # create an object, movie_id_df, that only contains the `movie_id` column sorted
-    movie_id_sorted_df = ratings_df.sort_values(by='movie_id')[['movie_id']]    
+        return final_ratings_df
+        
+    else:
+        print("No rescaling needed for {} ... \n".format(id_name))
 
-    # check whether movie_id is actually ordered
-    print("movie_id in ascending order AFTER sorting?: ", movie_id_sorted_df.movie_id.is_monotonic)
-
-    # remove duplicate ids
-    movie_id_sorted_df = movie_id_sorted_df.drop_duplicates() 
-    print("movie_id_sorted_df shape AFTER removing duplicates", movie_id_sorted_df.shape)
-
-    # create NEW_movie_id column with values which increments by one 
-    # for every change in value of movie_id column. 
-    i = movie_id_sorted_df.movie_id  
-    movie_id_sorted_df['NEW_movie_id'] = i.ne(i.shift()).cumsum()-1 # start ID from 0
-    
-    return movie_id_sorted_df
+        return ratings_df
 
 
-def test_rescaling(untouched_ratings_df, final_ratings_df):
+
+def test_movielens_10m_rescaling(untouched_ratings_df, final_ratings_df):
     ''' use testing rows to check correspondance between original 
     movie_id and NEW_movie_id. Same for user_id and NEW_user_id '''
 
@@ -289,7 +341,7 @@ def dataset_statistics(data_name, ratings_df):
     print(data_name + " statistics ...")
     
     # min and max value for each colum of a given dataframe
-    min_max = ratings_df.describe().loc[['min','max']]#.astype(int)
+    min_max = ratings_df.describe().loc[['min','max']].astype(int)
     print("min_max values: \n",  min_max)
 
     statistics_string = "\nNumber of unique items: {}, \nNumber of unique users: {}, \nAverage interactions per user: {:.2f},  \

@@ -118,7 +118,9 @@ model_string = "\nType of model: {} \nDataset: {} \nTest fold: {}".format(
     data_name,
     test_fold
 )
+
 print(model_string)
+print("="*100)
 
 # Data directory
 data_base_dir = "../data/"
