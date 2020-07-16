@@ -332,7 +332,7 @@ def data_split(R, train_frac, random_state=None):
 
     URM_train, URM_tmp = train_test_split(R, train_size=train_frac, random_state=random_state)
 
-    URM_validation, URM_test = train_test_split(X_tmp, Y_tmp, train_size=0.5, random_state=random_state)
+    URM_validation, URM_test = train_test_split(URM_tmp, train_size=0.5, random_state=random_state)
 
     return URM_train, URM_validation, URM_test
 
@@ -430,8 +430,8 @@ with tf.compat.v1.Session() as sess:
         URM_train, URM_validation, URM_test = data_split(R, train_frac=0.8, random_state=args.random_seed)
 
         print("URM_train", type(URM_train))
-        print("URM_train", type(URM_train))
-        print("URM_train", type(URM_train))
+        print("URM_validation", type(URM_validation))
+        print("URM_test", type(URM_test))
         exit(0)
 
         # SLIM model
