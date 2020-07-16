@@ -145,12 +145,14 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
         
         # rescale user_id  
-        final_ratings_df = rescale_ids(ratings_df, "user_id")  
+        original_user_id_is_sorted = ratings_df["user_id"].is_monotonic
+        final_ratings_df = rescale_ids(ratings_df, "user_id", original_user_id_is_sorted)  
         print(final_ratings_df)
         print("="*100)
 
         # rescale movie_id
-        final_ratings_df = rescale_ids(final_ratings_df, "movie_id") 
+        riginal_movie_id_is_sorted = ratings_df["movie_id"].is_monotonic
+        final_ratings_df = rescale_ids(final_ratings_df, "movie_id", riginal_movie_id_is_sorted) 
         print(final_ratings_df)
         print("="*100)
 
@@ -236,7 +238,7 @@ def gen_new_id(ratings_df, id_name):
     return id_name_sorted_df
 
 
-def rescale_ids(ratings_df, id_name):
+def rescale_ids(ratings_df, id_name, original_id_name_is_sorted):
     ''' 
         create successive one ranged IDs for user_id and movie_id columns 
     '''
@@ -257,12 +259,14 @@ def rescale_ids(ratings_df, id_name):
 
         # set `NEW_id_name` values based on its corresponding `id_name` by means of a
         # left join on `id_name` (only column name in both dataframes)
-        final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
+        if not original_id_name_is_sorted:
+            print("entró iffff")
+            final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
         
         # just append `NEW_id_name` to the original dataframe
-        # else:
-        #     print("entró elseeee")
-        #     final_ratings_df = pd.concat([ratings_df, id_name_sorted_df['NEW_' + id_name]], axis=1, sort=False)
+        else:
+            print("entró elseeee")
+            final_ratings_df = pd.concat([ratings_df, id_name_sorted_df['NEW_' + id_name]], axis=1, sort=False)
 
         if id_name == 'user_id' and 'NEW_user_id' in final_ratings_df.columns: 
                 final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
