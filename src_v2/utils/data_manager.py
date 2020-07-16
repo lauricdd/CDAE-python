@@ -160,9 +160,10 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         print(final_ratings_df)
         print("="*100)
 
+        # TODO: check testing
         # check correpondence between original and new IDs
-        if data_name == "movielens_10m": # only for movielens_dataset since considers specific tuples
-            test_movielens_10m_rescaling(ratings_df, final_ratings_df)  # TODO: check testing
+        # if data_name == "movielens_10m": # only for movielens_dataset since considers specific tuples
+        #     test_movielens_10m_rescaling(ratings_df, final_ratings_df)  
 
         # save new formatted file
         final_ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False, 

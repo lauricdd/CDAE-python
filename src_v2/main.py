@@ -4,6 +4,7 @@ import argparse
 
 from utils.data_preprocessor import *
 from utils.data_manager import *
+from utils.data_splitter import *
 from utils.Evaluation.Evaluator import EvaluatorHoldout
 from utils.utils import save_dictionary
 
@@ -197,48 +198,6 @@ user_train_set, item_train_set, user_test_set, item_test_set \
 
 
 ######################################################################
-
-# Matrix Compressed Sparse Row format
-# -----------------------------------
-import scipy.sparse as sps
-def csr_sparse_matrix(data, row, col, shape=None):
-    csr_matrix = sps.coo_matrix((data, (row, col)), shape=shape)
-    csr_matrix = csr_matrix.tocsr()
-
-    return csr_matrix
-
-
-# Random holdout split: take interactions randomly
-# and do not care about which users were involved in that interaction
-def split_train_validation_random_holdout(URM, train_split):
-    URM = sps.csr_matrix(URM) 
-
-    number_interactions = URM.nnz  # number of nonzero values
-    URM = URM.tocoo()  # Coordinate list matrix (COO)
-    shape = URM.shape
-
-    #  URM.row: user_list, URM.col: item_list, URM.data: rating_list
-
-    # Sampling strategy: take random samples of data using a boolean mask
-    train_mask = np.random.choice(
-        [True, False],
-        number_interactions,
-        p=[train_split, 1 - train_split])  # train_perc for True, 1-train_perc for False
-
-    URM_train = csr_sparse_matrix(URM.data[train_mask],
-                                  URM.row[train_mask],
-                                  URM.col[train_mask],
-                                  shape=shape)
-
-    test_mask = np.logical_not(train_mask)  # remaining samples
-    URM_test = csr_sparse_matrix(URM.data[test_mask],
-                                 URM.row[test_mask],
-                                 URM.col[test_mask],
-                                 shape=shape)
-
-    return URM_train, URM_test
-
-#######################################################################
  
 def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
@@ -311,31 +270,7 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
     return best_parameters
 
-######################################################################
-
-from sklearn.model_selection import train_test_split
-
-def data_split(R, train_frac, random_state=None):
-    ''' https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
-    param data:       Data to be split
-    param train_frac: Ratio of train set to whole dataset
-
-    Randomly split dataset, based on these ratios:
-        'train': train_frac
-        'valid': (1-train_frac) / 2
-        'test':  (1-train_frac) / 2
-
-    Eg: passing train_frac=0.8 gives a 80% / 10% / 10% split
-    '''
-
-    assert train_frac >= 0 and train_frac <= 1, "Invalid training set fraction"
-
-    URM_train, URM_tmp = train_test_split(R, train_size=train_frac, random_state=random_state)
-
-    URM_validation, URM_test = train_test_split(URM_tmp, train_size=0.5, random_state=random_state)
-
-    return URM_train, URM_validation, URM_test
-
+#######################################################################
 
 
 # Launch the evaluation graph in a session 
@@ -418,36 +353,39 @@ with tf.compat.v1.Session() as sess:
     # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":     
         
-        # Split dataset into train and test
         # Holdout data: for each user, randomly hold 20% of the ratings in the test set
         print("Splitting dataset ... ")
-        # URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
 
-        # from sklearn.model_selection import train_test_split
-        # Split dataset into train, validation and test with 0.8, 0.1, 0.1
-        # URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
+        URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
+        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9) 
 
-        URM_train, URM_validation, URM_test = data_split(R, train_frac=0.8, random_state=args.random_seed)
+        # k_out =  #20% by user
+        # URM_train, URM_test = split_train_leave_k_out_user_wise(R, #URM_all
+        #                                                 k_out=k_out,
+        #                                                 use_validation_set=False,
+        #                                                 leave_random_out=True)
 
-        import scipy.sparse as sps
+        # URM_train, URM_validation = split_train_leave_k_out_user_wise(URM_train,
+        #                                                   k_out=k_out,
+        #                                                   use_validation_set=False,
+        #                                                   leave_random_out=True)
+
         # convert to CSR format 
-        URM_train = sps.csr_matrix(URM_train)
-        URM_validation = sps.csr_matrix(URM_validation)
-        URM_test = sps.csr_matrix(URM_test)
+        # URM_train = sps.csr_matrix(URM_train)
+        # URM_validation = sps.csr_matrix(URM_validation)
+        # URM_test = sps.csr_matrix(URM_test)
 
-        print("URM_train", type(URM_train))
-        print("URM_validation", type(URM_validation))
-        print("URM_test", type(URM_test))
+        print("URM_train", URM_train.shape)
+        print("URM_validation", URM_validation.shape)
+        print("URM_test", URM_test.shape)
+
+        
         exit(0)
 
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
-        
-        # hyperparameters tuning
-        # URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
-        # URM_train, URM_validation = train_test_split(URM_train, train_size = 0.9, test_size = 0.1, 
-        #                                             random_state = args.random_seed)
 
+        # hyperparameters tuning
         if args.apply_hyperparams_tuning == "True":
             apply_hyperparams_tuning = True
         else:
