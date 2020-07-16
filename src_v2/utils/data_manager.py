@@ -158,7 +158,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 
         # check correpondence between original and new IDs
         if data_name == "movielens_10m": # only for movielens_dataset since considers specific tuples
-            test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
+            test_movielens_10m_rescaling(ratings_df, final_ratings_df)  # TODO: check testing
 
         # save new formatted file
         final_ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False, 
@@ -257,26 +257,23 @@ def rescale_ids(ratings_df, id_name, original_id_name_is_sorted):
         # set `NEW_id_name` values based on its corresponding `id_name` by means of a
         # left join on `id_name` (only column name in both dataframes)
         if not original_id_name_is_sorted:
-            print("entró iffff")
+            print("left join with `NEW_{}` to final_ratings_df dataframe".format(id_name))
             final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
         
-        # just append `NEW_id_name` to the original dataframe
+        # just append `NEW_id_name` to the  dataframe
         else:
-            print("entró elseeee")
+            print("appending `NEW_{}` to final_ratings_df dataframe".format(id_name))
             final_ratings_df = pd.concat([ratings_df, id_name_sorted_df['NEW_' + id_name]], axis=1, sort=False)
 
         if id_name == 'user_id' and 'NEW_user_id' in final_ratings_df.columns: 
-            print("id_name == 'user_id' and 'NEW_user_id' in final_ratings_df.columns")
+            print("renaming NEW_user_id ... \n")
             final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
-            final_ratings_df.head()
             final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
         
-        if id_name == 'movie_id' and 'NEW_movie_id' in final_ratings_df.columns: 
+        if id_name == 'movie_id' and 'NEW_movie_id' in final_ratings_df.columns:
+            print("renaming NEW_movie_id ... \n") 
             final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
-            print("id_name == 'movie_id' and 'NEW_movie_id' in final_ratings_df.columns")
-            final_ratings_df.head()
             final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
-
 
         return final_ratings_df
         
