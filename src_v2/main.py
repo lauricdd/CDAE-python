@@ -313,6 +313,30 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
 ######################################################################
 
+from sklearn.model_selection import train_test_split
+
+def data_split(R, train_frac, random_state=None):
+    ''' https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+    param data:       Data to be split
+    param train_frac: Ratio of train set to whole dataset
+
+    Randomly split dataset, based on these ratios:
+        'train': train_frac
+        'valid': (1-train_frac) / 2
+        'test':  (1-train_frac) / 2
+
+    Eg: passing train_frac=0.8 gives a 80% / 10% / 10% split
+    '''
+
+    assert train_frac >= 0 and train_frac <= 1, "Invalid training set fraction"
+
+    URM_train, URM_tmp = train_test_split(R, train_size=train_frac, random_state=random_state)
+
+    URM_validation, URM_test = train_test_split(X_tmp, Y_tmp, train_size=0.5, random_state=random_state)
+
+    return URM_train, URM_validation, URM_test
+
+
 
 # Launch the evaluation graph in a session 
 with tf.compat.v1.Session() as sess:
@@ -399,17 +423,24 @@ with tf.compat.v1.Session() as sess:
         print("Splitting dataset ... ")
         # URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
 
-        from sklearn.model_selection import train_test_split
+        # from sklearn.model_selection import train_test_split
         # Split dataset into train, validation and test with 0.8, 0.1, 0.1
-        URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
-    
+        # URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
+
+        URM_train, URM_validation, URM_test = data_split(R, train_frac=0.8, random_state=args.random_seed)
+
+        print("URM_train", type(URM_train))
+        print("URM_train", type(URM_train))
+        print("URM_train", type(URM_train))
+        exit(0)
+
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
         
         # hyperparameters tuning
         # URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
-        URM_train, URM_validation = train_test_split(URM_train, train_size = 0.9, test_size = 0.1, 
-                                                    random_state = args.random_seed)
+        # URM_train, URM_validation = train_test_split(URM_train, train_size = 0.9, test_size = 0.1, 
+        #                                             random_state = args.random_seed)
 
         if args.apply_hyperparams_tuning == "True":
             apply_hyperparams_tuning = True
