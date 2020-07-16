@@ -429,6 +429,12 @@ with tf.compat.v1.Session() as sess:
 
         URM_train, URM_validation, URM_test = data_split(R, train_frac=0.8, random_state=args.random_seed)
 
+        import scipy.sparse as sps
+        # convert to CSR format 
+        URM_train = URM_train.tocsr()
+        URM_validation = URM_validation.tocsr()
+        URM_test = URM_test.tocsr()
+
         print("URM_train", type(URM_train))
         print("URM_validation", type(URM_validation))
         print("URM_test", type(URM_test))
