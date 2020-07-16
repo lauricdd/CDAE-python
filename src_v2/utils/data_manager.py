@@ -131,6 +131,10 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
         ratings_df.rename(columns={'Cust_Id': 'user_id', 'Movie_Id': 'movie_id', 'Rating': 'rating'}, inplace=True)
 
+
+    # data exploration (summary statitics) before preprocessing
+    print("{} statistics BEFORE preprocessing ... ".format(data_name))
+    num_users, num_items, num_total_ratings = dataset_statistics(data_name, ratings_df)
         
     implicit_data_file = 'ratings_implicit.txt'
     
@@ -347,10 +351,11 @@ def dataset_statistics(data_name, ratings_df):
     min_max = ratings_df.describe().loc[['min','max']].astype(int)
     print("min_max values: \n",  min_max)
 
-    statistics_string = "\nNumber of unique items: {}, \nNumber of unique users: {}, \nAverage interactions per user: {:.2f},  \
+    statistics_string = "\nNumber of unique items: {}, \nNumber of unique users: {}, \n Num total ratings: {}, \nAverage interactions per user: {:.2f},  \
         \nAverage interactions per item {:.2f}, \nSparsity {:.2f}%".format(
         num_items,
         num_users,
+        num_total_ratings,
         (num_total_ratings/num_users),
         (num_total_ratings/num_items),
         (1-float(num_total_ratings)/(num_items*num_users))*100

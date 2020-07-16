@@ -174,7 +174,8 @@ elif data_name == 'movielens_10m' or data_name == 'netflix_prize':
     else: 
         ratings_df = load_data(DATASET_SUBFOLDER)
 
-    # Data exploration (summary statitics) 
+    # data exploration (summary statitics) 
+    print("{} statistics AFTER preprocessing ... ".format(data_name))
     num_users, num_items, num_total_ratings = dataset_statistics(data_name, ratings_df)
 
 else:
@@ -393,22 +394,22 @@ with tf.compat.v1.Session() as sess:
     # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":     
         
-        # from sklearn.model_selection import train_test_split
-        # Split dataset into train, validation and test with 0.6, 0.2, 0.2
-        # URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
-        # URM_train, URM_validation = train_test_split(train_R, train_size = 0.8, test_size = 0.2, 
-        #                                                 random_state = args.random_seed)
-
         # Split dataset into train and test
         # Holdout data: for each user, randomly hold 20% of the ratings in the test set
         print("Splitting dataset ... ")
-        URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
- 
+        # URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8)
+
+        from sklearn.model_selection import train_test_split
+        # Split dataset into train, validation and test with 0.6, 0.2, 0.2
+        URM_train, URM_test = train_test_split(R, train_size = 0.8, test_size = 0.2, random_state = args.random_seed)
+    
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
         
         # hyperparameters tuning
-        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
+        # URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
+        URM_train, URM_validation = train_test_split(URM_train, train_size = 0.8, test_size = 0.2, 
+                                                    random_state = args.random_seed)
 
         if args.apply_hyperparams_tuning == "True":
             apply_hyperparams_tuning = True
