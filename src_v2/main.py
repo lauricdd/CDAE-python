@@ -210,15 +210,6 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
     evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
     # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5, 10])
     # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5], exclude_seen=False)
-
-    # earlystopping_keywargs = {"validation_every_n": 5,
-    #                           "stop_on_validation": True,
-    #                           "evaluator_object": evaluator_validation_earlystopping, # or evaluator_validation
-    #                           "lower_validations_allowed": 5,
-    #                           "validation_metric": metric_to_optimize,
-                              }
-
-
     
     # Step 2: Create BayesianSearch object
     print("BayesianSearch objects ... ")
@@ -234,16 +225,30 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
     from skopt.space import Real, Integer, Categorical
     from utils.ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
 
+    # n_cases = 8  # 2
+    # n_random_starts =  int(n_cases / 3) # 5
+    n_cases = 2
+    metric_to_optimize = "MAP"
+    output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
+
     hyperparameters_range_dictionary = {}
     hyperparameters_range_dictionary["topK"] = Integer(5, 1000)
     hyperparameters_range_dictionary["l1_ratio"] = Real(low=1e-5, high=1.0, prior='log-uniform')
     hyperparameters_range_dictionary["alpha"] = Real(low=1e-3, high=1.0, prior='uniform')
 
+
+    # earlystopping_keywargs = {"validation_every_n": 5,
+    #                           "stop_on_validation": True,
+    #                           "evaluator_object": evaluator_validation_earlystopping, # or evaluator_validation
+    #                           "lower_validations_allowed": 5,
+    #                           "validation_metric": metric_to_optimize,
+    #                           }
+
     recommender_input_args = SearchInputRecommenderArgs(
         CONSTRUCTOR_POSITIONAL_ARGS=[URM_train],
         CONSTRUCTOR_KEYWORD_ARGS={},
         FIT_POSITIONAL_ARGS=[],
-        FIT_KEYWORD_ARGS={} # earlystopping_keywargs
+        FIT_KEYWORD_ARGS={}  # earlystopping_keywargs 
     )
     
     output_folder_path = "../results/result_experiments/"
@@ -252,13 +257,7 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
     if not os.path.exists(output_folder_path):
         os.makedirs(output_folder_path)
     
-    # # Step 4: run
-
-    n_cases = 8  # 2
-    # n_random_starts =  int(n_cases / 3) # 5
-    # n_cases = 2
-    metric_to_optimize = "MAP"
-    # output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
+    # Step 4: run
 
     best_parameters = parameterSearch.search(recommender_input_args, # the function to minimize
                                                 parameter_search_space=hyperparameters_range_dictionary, # the bounds on each dimension of x
@@ -267,7 +266,7 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
                                                 #n_random_starts = int(n_cases/3),
                                                 save_model="no",
                                                 output_folder_path=output_folder_path,
-                                                output_file_name_root=recommender_class.RECOMMENDER_NAME, #output_file_name_root
+                                                output_file_name_root=output_file_name_root,
                                                 metric_to_optimize=metric_to_optimize
                                             )
                                 
@@ -370,7 +369,6 @@ with tf.compat.v1.Session() as sess:
         print("Splitting dataset ... ")
 
         URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
-        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9) 
 
         # k_out =  #20% by user
         # URM_train, URM_test = split_train_leave_k_out_user_wise(R, #URM_all
@@ -395,6 +393,8 @@ with tf.compat.v1.Session() as sess:
     
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
+
+        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9) 
 
         # hyperparameters tuning
         if args.apply_hyperparams_tuning == "True":
