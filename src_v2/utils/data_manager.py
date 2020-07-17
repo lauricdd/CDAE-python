@@ -27,6 +27,7 @@ def download_from_URL(URL, folder_path, file_name):
 
     print("Downloading: {}".format(URL))
     print("In folder: {}".format(folder_path))
+    print("="*100)
 
     try:
         urlretrieve(URL, folder_path + file_name)  # copy network object to a local file
@@ -148,17 +149,28 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
         
         # rescale user_id  
-        # original_user_id_is_sorted = ratings_df["user_id"].is_monotonic
-        final_ratings_df = rescale_ids(ratings_df, "user_id")#, original_user_id_is_sorted)  
-        print(final_ratings_df)
-        print("="*100)
+        final_ratings_df = rescale_ids(ratings_df, "user_id")
 
+        # if id_name == 'user_id' and 
+        if "NEW_user_id" in final_ratings_df.columns: 
+            print("renaming NEW_user_id ... \n")
+            final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
+            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
+        
+        print("final_ratings_df after renaming NEW_user_id ... \n", final_ratings_df)
+        print("="*100)
+        
         exit(0)
 
         # rescale movie_id
-        # original_movie_id_is_sorted = ratings_df["movie_id"].is_monotonic
-        final_ratings_df = rescale_ids(final_ratings_df, "movie_id")# , original_movie_id_is_sorted) 
-        print(final_ratings_df)
+        final_ratings_df = rescale_ids(final_ratings_df, "movie_id")
+        
+        if 'NEW_movie_id' in final_ratings_df.columns:
+            print("renaming NEW_movie_id ... \n") 
+            final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
+            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
+
+        print("final_ratings_df after renaming NEW_user_id ... \n", final_ratings_df)
         print("="*100)
 
         # exit(0)
@@ -213,7 +225,7 @@ def k_fold_splitting(data_dir, data_file):
 
 ### RESCALING ###
 
-def rescale_ids(ratings_df, id_name): #, original_id_name_is_sorted):
+def rescale_ids(ratings_df, id_name): 
     ''' 
         create successive one ranged IDs for user_id and movie_id columns 
     '''
@@ -230,30 +242,8 @@ def rescale_ids(ratings_df, id_name): #, original_id_name_is_sorted):
         print(string)
         
         final_ratings_df = gen_new_id(ratings_df, id_name)
-        print("final_ratings_df ... \n", final_ratings_df)
-
-
-        # # set `NEW_id_name` values based on its corresponding `id_name` by means of a
-        # # left join on `id_name` (only column name in both dataframes)
-        # if not original_id_name_is_sorted:
-        #     print("left join with `NEW_{}` to final_ratings_df dataframe".format(id_name))
-        #     final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
-        
-        # # just append `NEW_id_name` to the  dataframe
-        # else:
-        #     print("appending `NEW_{}` to final_ratings_df dataframe".format(id_name))
-        #     final_ratings_df = pd.concat([ratings_df, id_name_sorted_df['NEW_' + id_name]], axis=1, sort=False)
-
-        # TODO
-        # if id_name == 'user_id' and 'NEW_user_id' in final_ratings_df.columns: 
-        #     print("renaming NEW_user_id ... \n")
-        #     final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
-        #     final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
-        
-        # if id_name == 'movie_id' and 'NEW_movie_id' in final_ratings_df.columns:
-        #     print("renaming NEW_movie_id ... \n") 
-        #     final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
-        #     final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
+        print("final_ratings_df with  ... \n", final_ratings_df)
+        print("="*100)
 
         return final_ratings_df
         
