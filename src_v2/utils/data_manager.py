@@ -147,31 +147,10 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         print("="*100)
 
         # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
-        
-        # rescale user_id  
+ 
         final_ratings_df = rescale_ids(ratings_df, "user_id")
 
-        # if id_name == 'user_id' and 
-        if "NEW_user_id" in final_ratings_df.columns: 
-            print("renaming NEW_user_id ... \n")
-            final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
-            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
-        
-        print("final_ratings_df after renaming NEW_user_id ... \n", final_ratings_df)
-        print("="*100)
-        
-        exit(0)
-
-        # rescale movie_id
         final_ratings_df = rescale_ids(final_ratings_df, "movie_id")
-        
-        if 'NEW_movie_id' in final_ratings_df.columns:
-            print("renaming NEW_movie_id ... \n") 
-            final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
-            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
-
-        print("final_ratings_df after renaming NEW_user_id ... \n", final_ratings_df)
-        print("="*100)
 
         # exit(0)
 
@@ -242,7 +221,25 @@ def rescale_ids(ratings_df, id_name):
         print(string)
         
         final_ratings_df = gen_new_id(ratings_df, id_name)
-        print("final_ratings_df with  ... \n", final_ratings_df)
+        print("final_ratings_df ... \n", final_ratings_df)
+        print("="*100)
+
+        new_id_name = 'NEW_' + id_name
+
+        if new_id_name in final_ratings_df.columns: 
+            print("renaming {} ... \n".format(new_id_name))
+
+            # select columns with new indexes
+            if id_name == "user_id":
+                final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
+            
+            elif id_name == "movie_id":    
+                final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
+            
+            # final columns renaming
+            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] 
+        
+        print("final_ratings_df after renaming NEW_user_id ... \n", final_ratings_df)
         print("="*100)
 
         return final_ratings_df
