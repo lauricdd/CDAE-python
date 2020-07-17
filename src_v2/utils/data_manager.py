@@ -89,7 +89,7 @@ def remove_file(filepath):
 
 ### PREPROCESSING ### 
 
-# def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FILE_NAME=None, DATASET_UNZIPPED_FOLDER=None):
+def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FILE_NAME=None, DATASET_UNZIPPED_FOLDER=None):
     '''
     load dataset from URL
     
