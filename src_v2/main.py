@@ -225,7 +225,7 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
     from skopt.space import Real, Integer, Categorical
     from utils.ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
 
-    # n_cases = 8  # 2
+    # n_cases = 8 
     # n_random_starts =  int(n_cases / 3) # 5
     n_cases = 2
     metric_to_optimize = "MAP"

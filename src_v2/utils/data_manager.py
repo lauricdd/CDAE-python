@@ -89,7 +89,7 @@ def remove_file(filepath):
 
 ### PREPROCESSING ### 
 
-def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FILE_NAME=None, DATASET_UNZIPPED_FOLDER=None):
+# def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FILE_NAME=None, DATASET_UNZIPPED_FOLDER=None):
     '''
     load dataset from URL
     
@@ -119,7 +119,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 
         # remove zip file 
         filepath = DATASET_SUBFOLDER + DATASET_FILE_NAME
-        remove_file(filepath)
+        # remove_file(filepath)
 
     elif data_name == "netflix_prize":
         
@@ -130,7 +130,6 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         keep_col = ['Cust_Id','Movie_Id','Rating']
         ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
         ratings_df.rename(columns={'Cust_Id': 'user_id', 'Movie_Id': 'movie_id', 'Rating': 'rating'}, inplace=True)
-
 
     # data exploration (summary statitics) before preprocessing
     print("{} statistics BEFORE preprocessing ... ".format(data_name))
@@ -149,16 +148,20 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
         
         # rescale user_id  
-        original_user_id_is_sorted = ratings_df["user_id"].is_monotonic
-        final_ratings_df = rescale_ids(ratings_df, "user_id", original_user_id_is_sorted)  
+        # original_user_id_is_sorted = ratings_df["user_id"].is_monotonic
+        final_ratings_df = rescale_ids(ratings_df, "user_id")#, original_user_id_is_sorted)  
         print(final_ratings_df)
         print("="*100)
 
+        exit(0)
+
         # rescale movie_id
-        original_movie_id_is_sorted = ratings_df["movie_id"].is_monotonic
-        final_ratings_df = rescale_ids(final_ratings_df, "movie_id", original_movie_id_is_sorted) 
+        # original_movie_id_is_sorted = ratings_df["movie_id"].is_monotonic
+        final_ratings_df = rescale_ids(final_ratings_df, "movie_id")# , original_movie_id_is_sorted) 
         print(final_ratings_df)
         print("="*100)
+
+        # exit(0)
 
         # TODO: check testing
         # check correpondence between original and new IDs
@@ -210,37 +213,7 @@ def k_fold_splitting(data_dir, data_file):
 
 ### RESCALING ###
 
-def gen_new_id(ratings_df, id_name):
-    sorted_id = ratings_df[id_name].is_monotonic
-    
-    # check if the values in the index are monotonically increasing 
-    if not sorted_id:
-        print("{} in ascending order BEFORE sorting?: {} \n".format(id_name, sorted_id))
-
-        # create an object, id_name_df, that only contains the `id_name` column sorted
-        id_name_sorted_df = ratings_df.sort_values(by=id_name)[[id_name]] 
-
-        # check whether id_name is actually ordered
-        print("{} in ascending order AFTER sorting?: {}".format(id_name, id_name_sorted_df[id_name].is_monotonic))  
-    else:
-        print("NO sorting needed for {} \n".format(id_name))
-        id_name_sorted_df = ratings_df
-
-    # remove duplicated IDs
-    print("{}_sorted_df shape BEFORE removing duplicates: {}".format(id_name, id_name_sorted_df.shape))
-    id_name_sorted_df = id_name_sorted_df.drop_duplicates() 
-    print("{}_sorted_df shape AFTER removing duplicates: {}".format(id_name, id_name_sorted_df.shape))
-
-    # create `NEW_id_name` column with values which increments by one 
-    # for every change in value of id_name column. 
-    i = id_name_sorted_df[id_name]
-    new_id_name = 'NEW_' + id_name
-    id_name_sorted_df[new_id_name] = i.ne(i.shift()).cumsum()-1 # start IDs from 0
-    
-    return id_name_sorted_df
-
-
-def rescale_ids(ratings_df, id_name, original_id_name_is_sorted):
+def rescale_ids(ratings_df, id_name): #, original_id_name_is_sorted):
     ''' 
         create successive one ranged IDs for user_id and movie_id columns 
     '''
@@ -256,29 +229,31 @@ def rescale_ids(ratings_df, id_name, original_id_name_is_sorted):
                 \nunique_values: {}\n".format(id_name,min_value, max_value,unique_values)
         print(string)
         
-        id_name_sorted_df = gen_new_id(ratings_df, id_name)
-        print("id_name_sorted_df ... \n", id_name_sorted_df)
+        final_ratings_df = gen_new_id(ratings_df, id_name)
+        print("final_ratings_df ... \n", final_ratings_df)
 
-        # set `NEW_id_name` values based on its corresponding `id_name` by means of a
-        # left join on `id_name` (only column name in both dataframes)
-        if not original_id_name_is_sorted:
-            print("left join with `NEW_{}` to final_ratings_df dataframe".format(id_name))
-            final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
-        
-        # just append `NEW_id_name` to the  dataframe
-        else:
-            print("appending `NEW_{}` to final_ratings_df dataframe".format(id_name))
-            final_ratings_df = pd.concat([ratings_df, id_name_sorted_df['NEW_' + id_name]], axis=1, sort=False)
 
-        if id_name == 'user_id' and 'NEW_user_id' in final_ratings_df.columns: 
-            print("renaming NEW_user_id ... \n")
-            final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
-            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
+        # # set `NEW_id_name` values based on its corresponding `id_name` by means of a
+        # # left join on `id_name` (only column name in both dataframes)
+        # if not original_id_name_is_sorted:
+        #     print("left join with `NEW_{}` to final_ratings_df dataframe".format(id_name))
+        #     final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
         
-        if id_name == 'movie_id' and 'NEW_movie_id' in final_ratings_df.columns:
-            print("renaming NEW_movie_id ... \n") 
-            final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
-            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
+        # # just append `NEW_id_name` to the  dataframe
+        # else:
+        #     print("appending `NEW_{}` to final_ratings_df dataframe".format(id_name))
+        #     final_ratings_df = pd.concat([ratings_df, id_name_sorted_df['NEW_' + id_name]], axis=1, sort=False)
+
+        # TODO
+        # if id_name == 'user_id' and 'NEW_user_id' in final_ratings_df.columns: 
+        #     print("renaming NEW_user_id ... \n")
+        #     final_ratings_df = final_ratings_df[['NEW_user_id', 'movie_id', 'rating']]  
+        #     final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
+        
+        # if id_name == 'movie_id' and 'NEW_movie_id' in final_ratings_df.columns:
+        #     print("renaming NEW_movie_id ... \n") 
+        #     final_ratings_df = final_ratings_df[['user_id', 'NEW_movie_id', 'rating']]  
+        #     final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] # columns renaming
 
         return final_ratings_df
         
@@ -286,6 +261,52 @@ def rescale_ids(ratings_df, id_name, original_id_name_is_sorted):
         print("No rescaling needed for {} ... \n".format(id_name))
 
         return ratings_df
+
+
+
+def gen_new_id(ratings_df, id_name):
+    sorted_id = ratings_df[id_name].is_monotonic
+    
+    # check if the values in the index are monotonically increasing 
+    if not sorted_id:  # MOVIE_ID MOVIELENS_10M
+        print("{} in ascending order BEFORE sorting?: {} \n".format(id_name, sorted_id))
+
+        # create an object, id_name_df, that only contains the `id_name` column sorted
+        id_name_sorted_df = ratings_df.sort_values(by=id_name)[[id_name]] 
+
+        # check whether id_name is actually ordered
+        print("{} in ascending order AFTER sorting?: {}".format(id_name, id_name_sorted_df[id_name].is_monotonic))  
+    
+        # remove duplicated IDs
+        print("{}_sorted_df shape BEFORE removing duplicates: {}".format(id_name, id_name_sorted_df.shape))
+        id_name_sorted_df = id_name_sorted_df.drop_duplicates() 
+        print("{}_sorted_df shape AFTER removing duplicates: {}".format(id_name, id_name_sorted_df.shape))
+
+        # create `NEW_id_name` column with values which increments by one 
+        # for every change in value of id_name column. 
+        i = id_name_sorted_df[id_name]
+        new_id_name = 'NEW_' + id_name
+        id_name_sorted_df[new_id_name] = i.ne(i.shift()).cumsum()-1 # start IDs from 0
+
+        # set `NEW_id_name` values based on its corresponding `id_name` by means of a
+        # left join on `id_name` (only column name in both dataframes)
+        print("left join with `NEW_{}` to final_ratings_df dataframe".format(id_name))
+        final_ratings_df = ratings_df.merge(id_name_sorted_df, on=id_name, how='left') 
+
+    else: # USER_ID MOVIELENS_10m
+        print("NO sorting needed for {} \n".format(id_name))
+
+        # create `NEW_id_name` column with values which increments by one 
+        # for every change in value of id_name column. 
+        print("appending `NEW_{}` to final_ratings_df dataframe".format(id_name))
+
+        i = ratings_df[id_name]
+        new_id_name = 'NEW_' + id_name
+        ratings_df[new_id_name] = i.ne(i.shift()).cumsum()-1 # start IDs from 0
+
+        final_ratings_df = ratings_df
+
+    return final_ratings_df
 
 
 
