@@ -205,9 +205,20 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
     # Step 1: Import the evaluator objects
     print("Evaluator objects ... ")
+    # cutoff = 5
     evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[5])
     evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
     # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5, 10])
+    # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5], exclude_seen=False)
+
+    # earlystopping_keywargs = {"validation_every_n": 5,
+    #                           "stop_on_validation": True,
+    #                           "evaluator_object": evaluator_validation_earlystopping,
+    #                           "lower_validations_allowed": 5,
+    #                           "validation_metric": metric_to_optimize,
+                              }
+
+
     
     # Step 2: Create BayesianSearch object
     print("BayesianSearch objects ... ")
@@ -215,8 +226,8 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
     from utils.ParameterTuning.SearchBayesianSkopt import SearchBayesianSkopt
     
     parameterSearch = SearchBayesianSkopt(recommender_class,
-                                         evaluator_validation=evaluator_validation,
-                                         evaluator_test=evaluator_test)
+                                          evaluator_validation=evaluator_validation,
+                                          evaluator_test=evaluator_test)
     
     # Step 3: Define parameters range   
     print("Parameters range ...") 
@@ -232,7 +243,7 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
         CONSTRUCTOR_POSITIONAL_ARGS=[URM_train],
         CONSTRUCTOR_KEYWORD_ARGS={},
         FIT_POSITIONAL_ARGS=[],
-        FIT_KEYWORD_ARGS={}
+        FIT_KEYWORD_ARGS={} # earlystopping_keywargs
     )
     
     output_folder_path = "../results/result_experiments/"
@@ -243,9 +254,11 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
     
     # # Step 4: run
 
-    n_cases = 2
+    n_cases = 8  # 2
+    # n_random_starts =  int(n_cases / 3) # 5
+    # n_cases = 2
     metric_to_optimize = "MAP"
-    output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
+    # output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
 
     best_parameters = parameterSearch.search(recommender_input_args, # the function to minimize
                                                 parameter_search_space=hyperparameters_range_dictionary, # the bounds on each dimension of x
@@ -254,7 +267,7 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
                                                 #n_random_starts = int(n_cases/3),
                                                 save_model="no",
                                                 output_folder_path=output_folder_path,
-                                                output_file_name_root=output_file_name_root,
+                                                output_file_name_root=recommender_class.RECOMMENDER_NAME, #output_file_name_root
                                                 metric_to_optimize=metric_to_optimize
                                             )
                                 
@@ -375,13 +388,11 @@ with tf.compat.v1.Session() as sess:
         # URM_validation = sps.csr_matrix(URM_validation)
         # URM_test = sps.csr_matrix(URM_test)
 
-        print("URM_train", URM_train.shape)
-        print("URM_validation", URM_validation.shape)
-        print("URM_test", URM_test.shape)
+        # print("URM_train", URM_train.shape)
+        # print("URM_validation", URM_validation.shape)
+        # print("URM_test", URM_test.shape)
 
-        
-        exit(0)
-
+    
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
 
