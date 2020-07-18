@@ -86,11 +86,11 @@ parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 # SLIM parameters
 ######################################################################
 
-parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='True')
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
 # TODO: not working for netflix_prize 
 # EvaluatorHoldout: WARNING: No users had a sufficient number of relevant items
 
-# best hyperparamas config evaluated with evaluator_test. 
+# best hyperparamas config evaluated with evaluator_test. (use the parameters we computed the previous time)
 SLIMElasticNet_best_parameters_list = {
     # fold 0
     'politic_old': {'topK': 1000, 'l1_ratio': 1e-05, 'alpha': 0.001}, 
@@ -366,9 +366,9 @@ with tf.compat.v1.Session() as sess:
     elif model_name == "SLIMElasticNet":     
         
         # Holdout data: for each user, randomly hold 20% of the ratings in the test set
-        print("Splitting dataset ... ")
-
+        print("Splitting dataset with 20% test data... ")
         URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
+        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
 
         # k_out =  #20% by user
         # URM_train, URM_test = split_train_leave_k_out_user_wise(R, #URM_all
@@ -393,8 +393,6 @@ with tf.compat.v1.Session() as sess:
     
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
-
-        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
 
         # hyperparameters tuning
         if args.apply_hyperparams_tuning == "True":
