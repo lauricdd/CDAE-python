@@ -394,7 +394,7 @@ with tf.compat.v1.Session() as sess:
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
 
-        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9) 
+        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
 
         # hyperparameters tuning
         if args.apply_hyperparams_tuning == "True":

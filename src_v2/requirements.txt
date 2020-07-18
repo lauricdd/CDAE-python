@@ -3,6 +3,7 @@ tensorflow==1.14.0
 matplotlib==3.2.1
 pandas==1.0.3
 scipy==1.4.1
-scikit-learn==0.23.1
+# scikit-learn==0.23.1 # ValueError: array must not contain infs or NaNs 
+scikit-learn==0.22.1
 scikit-optimize==0.7.4
 kaggle==1.5.6
