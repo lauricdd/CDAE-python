@@ -2,10 +2,15 @@ import tensorflow as tf
 import time
 import argparse
 
-from utils.data_preprocessor import *
+
 from utils.data_manager import *
-from utils.data_splitter import *
+from utils.data_preprocessor import *
+
+from utils.SplitFunctions.split_train_validation_random_holdout import *
+
+from utils.ParameterTuning.hyperparameter_search import hyperparams_tuning
 from utils.Evaluation.Evaluator import EvaluatorHoldout
+
 from utils.utils import save_dictionary
 
 from recommenders.Recommenders.SLIMElasticNetRecommender import SLIMElasticNetRecommender
@@ -16,7 +21,6 @@ from recommenders.DAE import DAE
 # TODO: check warnings
 import warnings
 warnings.filterwarnings('ignore')
-
                         
 #TODO: use easydict
 parser = argparse.ArgumentParser(description='Collaborative Denoising Autoencoder')
@@ -86,9 +90,7 @@ parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 # SLIM parameters
 ######################################################################
 
-parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
-# TODO: not working for netflix_prize 
-# EvaluatorHoldout: WARNING: No users had a sufficient number of relevant items
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='True')
 
 # best hyperparamas config evaluated with evaluator_test. (use the parameters we computed the previous time)
 SLIMElasticNet_best_parameters_list = {
@@ -135,8 +137,6 @@ path = data_base_dir + "%s" % data_name + "/"
 
     User IDs are in ranges from 1 to 1537-1
 '''
-
-
 if data_name == 'politic_new': # Politic2016
     num_users = 1537 
     num_items = 7975
@@ -146,6 +146,7 @@ elif data_name == 'politic_old': # Politic2013
     num_users = 1540
     num_items = 7162
     num_total_ratings = 2779703
+
 
 elif data_name == 'movielens_10m' or data_name == 'netflix_prize': 
 
@@ -198,91 +199,53 @@ user_train_set, item_train_set, user_test_set, item_test_set \
 
 
 ######################################################################
+
+# Random holdout split: take interactions randomly
+# and do not care about which users were involved in that interaction
+def split_train_validation_random_holdout(URM, train_split):
+    URM = sps.csr_matrix(URM) 
+
+    number_interactions = URM.nnz  # number of nonzero values
+    URM = URM.tocoo()  # Coordinate list matrix (COO)
+    shape = URM.shape
+
+    #  URM.row: user_list, URM.col: item_list, URM.data: rating_list
+
+    # Sampling strategy: take random samples of data using a boolean mask
+    train_mask = np.random.choice(
+        [True, False],
+        number_interactions,
+        p=[train_split, 1 - train_split])  # train_perc for True, 1-train_perc for False
+
+    URM_train = csr_sparse_matrix(URM.data[train_mask],
+                                  URM.row[train_mask],
+                                  URM.col[train_mask],
+                                  shape=shape)
+
+    test_mask = np.logical_not(train_mask)  # remaining samples
+    URM_test = csr_sparse_matrix(URM.data[test_mask],
+                                 URM.row[test_mask],
+                                 URM.col[test_mask],
+                                 shape=shape)
+
+    return URM_train, URM_test
+
+
+def csr_sparse_matrix(data, row, col, shape=None):
+    """
+    returns a matrix in CSR (Compressed Sparse Row) format
+    URM at a time
+    :param data, row, col, shape:
+    :return:
+    """
+
+    csr_matrix = sps.coo_matrix((data, (row, col)), shape=shape)
+    csr_matrix = csr_matrix.tocsr()
+
+    return csr_matrix
  
-def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
-    from utils.Evaluation.Evaluator import EvaluatorHoldout
-
-    # Step 1: Import the evaluator objects
-    print("Evaluator objects ... ")
-    # cutoff = 5
-    evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[5])
-    evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
-    # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5, 10])
-    # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5], exclude_seen=False)
-    
-    # Step 2: Create BayesianSearch object
-    print("BayesianSearch objects ... ")
-
-    from utils.ParameterTuning.SearchBayesianSkopt import SearchBayesianSkopt
-    
-    parameterSearch = SearchBayesianSkopt(recommender_class,
-                                          evaluator_validation=evaluator_validation,
-                                          evaluator_test=evaluator_test)
-    
-    # Step 3: Define parameters range   
-    print("Parameters range ...") 
-    from skopt.space import Real, Integer, Categorical
-    from utils.ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
-
-    # n_cases = 8 
-    # n_random_starts =  int(n_cases / 3) # 5
-    n_cases = 2
-    metric_to_optimize = "MAP"
-    output_file_name_root = "{}_metadata.zip".format(recommender_class.RECOMMENDER_NAME)
-
-    hyperparameters_range_dictionary = {}
-    hyperparameters_range_dictionary["topK"] = Integer(5, 1000)
-    hyperparameters_range_dictionary["l1_ratio"] = Real(low=1e-5, high=1.0, prior='log-uniform')
-    hyperparameters_range_dictionary["alpha"] = Real(low=1e-3, high=1.0, prior='uniform')
-
-
-    # earlystopping_keywargs = {"validation_every_n": 5,
-    #                           "stop_on_validation": True,
-    #                           "evaluator_object": evaluator_validation_earlystopping, # or evaluator_validation
-    #                           "lower_validations_allowed": 5,
-    #                           "validation_metric": metric_to_optimize,
-    #                           }
-
-    recommender_input_args = SearchInputRecommenderArgs(
-        CONSTRUCTOR_POSITIONAL_ARGS=[URM_train],
-        CONSTRUCTOR_KEYWORD_ARGS={},
-        FIT_POSITIONAL_ARGS=[],
-        FIT_KEYWORD_ARGS={}  # earlystopping_keywargs 
-    )
-    
-    output_folder_path = "../results/result_experiments/"
-    
-    # If directory does not exist, create
-    if not os.path.exists(output_folder_path):
-        os.makedirs(output_folder_path)
-    
-    # Step 4: run
-
-    best_parameters = parameterSearch.search(recommender_input_args, # the function to minimize
-                                                parameter_search_space=hyperparameters_range_dictionary, # the bounds on each dimension of x
-                                                n_cases=n_cases,   # the number of evaluations of f
-                                                n_random_starts=1, # the number of random initialization points
-                                                #n_random_starts = int(n_cases/3),
-                                                save_model="no",
-                                                output_folder_path=output_folder_path,
-                                                output_file_name_root=output_file_name_root,
-                                                metric_to_optimize=metric_to_optimize
-                                            )
-                                
-    print("best_parameters", best_parameters)
-
-    # Step 5: return best_parameters
-    # from utils.DataIO import DataIO
-    # data_loader = DataIO(folder_path=output_folder_path)
-    # search_metadata = data_loader.load_data(recommender_class.RECOMMENDER_NAME + "_metadata.zip")
-    # print("search_metadata", search_metadata)
-    
-    # best_parameters = search_metadata["hyperparameters_best"]
-
-    return best_parameters
-
-#######################################################################
+ ######################################################################
 
 
 # Launch the evaluation graph in a session 
@@ -365,32 +328,14 @@ with tf.compat.v1.Session() as sess:
     # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":     
         
-        # Holdout data: for each user, randomly hold 20% of the ratings in the test set
+        # Holdout data: 
         print("Splitting dataset with 20% test data... ")
         URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
         URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
+        
+        # for each user, randomly hold 20% of the ratings in the test set
 
-        # k_out =  #20% by user
-        # URM_train, URM_test = split_train_leave_k_out_user_wise(R, #URM_all
-        #                                                 k_out=k_out,
-        #                                                 use_validation_set=False,
-        #                                                 leave_random_out=True)
 
-        # URM_train, URM_validation = split_train_leave_k_out_user_wise(URM_train,
-        #                                                   k_out=k_out,
-        #                                                   use_validation_set=False,
-        #                                                   leave_random_out=True)
-
-        # convert to CSR format 
-        # URM_train = sps.csr_matrix(URM_train)
-        # URM_validation = sps.csr_matrix(URM_validation)
-        # URM_test = sps.csr_matrix(URM_test)
-
-        # print("URM_train", URM_train.shape)
-        # print("URM_validation", URM_validation.shape)
-        # print("URM_test", URM_test.shape)
-
-    
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
 

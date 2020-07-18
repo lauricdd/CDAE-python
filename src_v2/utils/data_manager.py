@@ -90,6 +90,18 @@ def remove_file(filepath):
 
 ### PREPROCESSING ### 
 
+def convert_ratings_into_implicit(ratings_df):
+    ''' transforms a explicit ratings dataset into implicit.
+    Mainly keeps only ratings > 3 and treat the other ratings as missing entries. 
+    Retained ratings are converted to 1 '''
+
+    print("Converting explicit ratings into implicit ...")
+
+    ratings_df['rating'] = ratings_df['rating'].apply(lambda x: 1 if x > 3.0 else 0)
+    
+    return ratings_df
+
+
 def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FILE_NAME=None, DATASET_UNZIPPED_FOLDER=None):
     '''
     load dataset from URL
@@ -147,30 +159,21 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         print("="*100)
 
         # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
-        # final_ratings_df = rescale_ids_movielens_10m(ratings_df)
-        final_ratings_df = rescale_ids(ratings_df)
+        final_ratings_df = rescale_ids(ratings_df)        
 
         if data_name == "movielens_10m":
-            
             # check correpondence between original and new ids 
-            untouched_ratings_df = ratings_df
             test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
 
-            # final cols renaming
-            final_ratings_df = final_ratings_df[['NEW_user_id', 'NEW_movie_id', 'rating']] 
-            print("final_ratings_df BEFORE renaming NEW_user_id and NEW_movie_id ... \n", final_ratings_df)
-            print("="*100)
-     
-            final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] 
-            print("final_ratings_df AFTER renaming NEW_user_id and NEW_movie_id ... \n", final_ratings_df)
-            print("="*100)
+        # final cols renaming
+        final_ratings_df = rename_columns(final_ratings_df)
 
         # save new formatted file
         final_ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False, 
                 header=None, sep="\t") # use \t as separator as in politic_old and politic_new
 
         # remove explicit dataset file
-        # remove_file(filepath)
+        remove_file(filepath)
 
     if data_name == "movielens_10m":
         # if any test or train fold exists skip
@@ -181,16 +184,28 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
     return final_ratings_df    
 
 
-def convert_ratings_into_implicit(ratings_df):
-    ''' transforms a explicit ratings dataset into implicit.
-    Mainly keeps only ratings > 3 and treat the other ratings as missing entries. 
-    Retained ratings are converted to 1 '''
-
-    print("Converting explicit ratings into implicit ...")
-
-    ratings_df['rating'] = ratings_df['rating'].apply(lambda x: 1 if x > 3.0 else 0)
+def rename_columns(final_ratings_df):
+    '''
+    '''
     
-    return ratings_df
+    user_column_id = 'user_id'
+    movie_column_id = 'movie_id'
+
+    if "NEW_user_id" in final_ratings_df.columns:
+        user_column_id = 'NEW_user_id'
+    
+    if "NEW_movie_id" in final_ratings_df.columns:
+        movie_column_id = 'NEW_movie_id'
+
+    final_ratings_df = final_ratings_df[[user_column_id, movie_column_id, 'rating']] 
+    print("final_ratings_df BEFORE renaming NEW_user_id and NEW_movie_id ... \n", final_ratings_df)
+    print("="*100)
+
+    final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] 
+    print("final_ratings_df AFTER renaming NEW_user_id and NEW_movie_id ... \n", final_ratings_df)
+    print("="*100)
+
+    return final_ratings_df
 
 
 def k_fold_splitting(data_dir, data_file):
@@ -224,7 +239,6 @@ def rescale_ids(ratings_df):
     print("="*100)
 
     return final_ratings_df
-
 
 
 def gen_new_id(ratings_df, id_name):
@@ -290,7 +304,6 @@ def gen_new_id(ratings_df, id_name):
     
 
     return final_ratings_df
-
 
 
 def test_movielens_10m_rescaling(untouched_ratings_df, final_ratings_df):
