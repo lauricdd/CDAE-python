@@ -356,8 +356,6 @@ def test_movielens_10m_rescaling(untouched_ratings_df, final_ratings_df):
 
 
 
-
-
 ### LOADING / STATISTICS ###
     
 def load_data(DATASET_SUBFOLDER):

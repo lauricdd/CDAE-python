@@ -333,7 +333,10 @@ with tf.compat.v1.Session() as sess:
 
     # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":     
-        
+        print("R", R)
+
+        exit(0)
+
         # holdout data
         if  args.splitting_method == "random_global":
             print("Splitting dataset with 20% test data using split_train_in_two_percentage_global_sample... ")
