@@ -30,8 +30,8 @@ parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default=
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize'], 
-                        default='netflix_prize')
+parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize', 'yelp'], 
+                        default='yelp')
 
 
 ######################################################################
@@ -333,10 +333,6 @@ with tf.compat.v1.Session() as sess:
 
     # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":     
-        print("R", R)
-
-        exit(0)
-
         # holdout data
         if  args.splitting_method == "random_global":
             print("Splitting dataset with 20% test data using split_train_in_two_percentage_global_sample... ")

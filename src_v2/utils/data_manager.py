@@ -168,8 +168,8 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
     if not os.path.exists(DATASET_SUBFOLDER + implicit_data_file): 
         
         # convert ratings into implicit
-        ratings_df = convert_ratings_into_implicit(ratings_df) 
-        print(ratings_df)
+        final_ratings_df = convert_ratings_into_implicit(ratings_df) 
+        print(final_ratings_df)
         print("="*100)
 
         if data_name == "movielens_10m":
@@ -189,7 +189,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # remove explicit dataset file
         remove_file(filepath)
 
-    if data_name == "movielens_10m":
+    if data_name == "movielens_10m": # TODO: if model_name == 'CDAE'
         # if any test or train fold exists skip
         if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
             # ratings five-fold splitting
