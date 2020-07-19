@@ -88,6 +88,13 @@ def remove_file(filepath):
         print("error: ", e) 
 
 
+def unique_values(column):
+    ''' count distinct values of a dataframe column'''
+    count = column.nunique() 
+    
+    return count
+
+
 ### PREPROCESSING ### 
 
 def convert_ratings_into_implicit(ratings_df):
@@ -250,8 +257,8 @@ def gen_new_id(ratings_df, id_name):
     unique_values = ratings_df[id_name].nunique() # num_users
 
     # create NEW_index for `id_name` attribute
-    if (max_value-min_value) > unique_values: # TODO: >=???
-
+    # if (max_value-min_value) >= unique_values: 
+    if max_value >= unique_values:
         string = "rescaling {} ... \nmin_value: {} \nmax_value: {}  \
                 \nunique_values: {}\n".format(id_name,min_value, max_value,unique_values)
         print(string)
@@ -341,11 +348,7 @@ def test_movielens_10m_rescaling(untouched_ratings_df, final_ratings_df):
     print("="*100)
 
 
-def unique_values(column):
-    ''' count distinct values of a dataframe column'''
-    count = column.nunique() 
-    
-    return count
+
 
 
 ### LOADING / STATISTICS ###
