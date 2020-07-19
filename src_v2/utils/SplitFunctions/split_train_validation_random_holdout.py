@@ -22,8 +22,7 @@ def split_train_in_two_percentage_user_wise(URM_train, train_percentage = 0.1, v
     assert train_percentage >= 0.0 and train_percentage<=1.0, "train_percentage must be a value between 0.0 and 1.0, provided was '{}'".format(train_percentage)
 
     # ensure to use csr matrix or we get big problem
-    # URM_train = URM_train.tocsr()
-    URM_train = sps.csr_matrix(URM_train) 
+    URM_train = sps.csr_matrix(URM_train) # URM_train = URM_train.tocsr()
 
     num_users, num_items = URM_train.shape
 
@@ -37,7 +36,6 @@ def split_train_in_two_percentage_user_wise(URM_train, train_percentage = 0.1, v
 
         start_pos = URM_train.indptr[user_id]
         end_pos = URM_train.indptr[user_id+1]
-
 
         user_profile_items = URM_train.indices[start_pos:end_pos]
         user_profile_ratings = URM_train.data[start_pos:end_pos]

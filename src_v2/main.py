@@ -31,7 +31,7 @@ parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
 parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize'], 
-                        default='movielens_10m')
+                        default='netflix_prize')
 
 
 ######################################################################
@@ -90,7 +90,10 @@ parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 # SLIM parameters
 ######################################################################
 
-parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='True')
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
+
+parser.add_argument('--splitting_method', choices=['random_global','random_user_wise'], default='random_user_wise')
+
 
 # best hyperparamas config evaluated with evaluator_test. (use the parameters we computed the previous time)
 SLIMElasticNet_best_parameters_list = {
@@ -328,15 +331,20 @@ with tf.compat.v1.Session() as sess:
     # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":     
         
-        # Holdout data: 
-        print("Splitting dataset with 20% test data... ")
-        # URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
-        # URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
+        # holdout data
+        if  args.splitting_method == "random_global":
+            print("Splitting dataset with 20% test data using split_train_in_two_percentage_global_sample... ")
+            URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
+            URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
         
-        URM_train, URM_test = split_train_in_two_percentage_user_wise(R, train_percentage=0.8, verbose=True) # URM_all
-        URM_train, URM_validation = split_train_in_two_percentage_user_wise(URM_train, train_percentage=0.9, verbose=True)
+        elif args.splitting_method == "random_user_wise":
+            # for each user, randomly hold 20% of the ratings in the test set
+            print("Splitting dataset with 20% test data using split_train_in_two_percentage_user_wise ... ")
+            URM_train, URM_test = split_train_in_two_percentage_user_wise(R, train_percentage=0.8, verbose=True) # URM_all
+            URM_train, URM_validation = split_train_in_two_percentage_user_wise(URM_train, train_percentage=0.9, verbose=True)
 
-        # for each user, randomly hold 20% of the ratings in the test set
+        else:
+            raise NotImplementedError("ERROR")
 
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
