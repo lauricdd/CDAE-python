@@ -100,8 +100,11 @@ SLIMElasticNet_best_parameters_list = {
     # fold 0
     'politic_old': {'topK': 1000, 'l1_ratio': 1e-05, 'alpha': 0.001}, 
     
-    # using random splitting on the entire dataset (using R matrix)
-    'movielens_10m': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258},
+    # using split_train_validation_random_holdout splitting
+    # 'movielens_10m': {'topK': 533, 'l1_ratio': 0.025062993365157635, 'alpha': 0.18500803626703258},
+
+    # using split_train_in_two_percentage_user_wise splitting
+    'movielens_10m': {'topK': 824, 'l1_ratio': 6.391177496425719e-05, 'alpha': 0.6829293898814084},
 
     'netflix_prize': {'topK': 209, 'l1_ratio': 0.011269764260753398, 'alpha': 0.011248017606952841}
 }

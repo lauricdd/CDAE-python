@@ -49,7 +49,7 @@ def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
         print("netflix-prize dataset files\n")
         os.system("kaggle datasets files lauraschiatti/netflix-prize")
 
-        data_files = ["netflix_prize.txt"] 
+        data_files = ["ratings.csv"]#["netflix_prize.txt"] 
         for filename in data_files:
             command =  "kaggle datasets download -f " + str(filename)+ " -p ../data/netflix_prize --unzip lauraschiatti/netflix-prize"
             os.system(command)
@@ -146,10 +146,17 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # load the dataset
         filepath = download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
         
+        #["netflix_prize.txt"] 
         # format: Cust_Id,Movie_Id,rating,timestamp
-        keep_col = ['Cust_Id','Movie_Id','Rating']
+        # # keep_col = ['Cust_Id','Movie_Id','Rating']
+        # ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
+        # ratings_df.rename(columns={'Cust_Id': 'user_id', 'Movie_Id': 'movie_id', 'Rating': 'rating'}, inplace=True)
+
+        # ["ratings.csv"]
+        # format: userId,movieId,rating,timestamp
+        keep_col = ['userId','movieId','rating']
         ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
-        ratings_df.rename(columns={'Cust_Id': 'user_id', 'Movie_Id': 'movie_id', 'Rating': 'rating'}, inplace=True)
+        ratings_df.rename(columns={'userId': 'user_id', 'movieId': 'movie_id'}, inplace=True)
 
     # data exploration (summary statitics) before preprocessing
     print("{} statistics BEFORE preprocessing ... ".format(data_name))
