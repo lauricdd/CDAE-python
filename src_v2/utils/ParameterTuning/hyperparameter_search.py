@@ -4,20 +4,24 @@
 
 from utils.Evaluation.Evaluator import EvaluatorHoldout
 
+from skopt.space import Real, Integer, Categorical
+from utils.ParameterTuning.SearchBayesianSkopt import SearchBayesianSkopt
+from utils.ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
+import os
+
 def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
 
     # Step 1: Import the evaluator objects
+    
     print("Evaluator objects ... ")
-    # cutoff = 5
-    evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[5])
-    evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[5, 10])
-    # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5, 10])
-    # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[5], exclude_seen=False)
+    
+    cutoff = 5
+    evaluator_validation = EvaluatorHoldout(URM_validation, cutoff_list=[cutoff])
+    evaluator_test = EvaluatorHoldout(URM_test, cutoff_list=[cutoff, cutoff+5])
+    # evaluator_validation_earlystopping = EvaluatorHoldout(URM_train, cutoff_list=[cutoff, cutoff+5], exclude_seen=False)
     
     # Step 2: Create BayesianSearch object
     print("BayesianSearch objects ... ")
-
-    from utils.ParameterTuning.SearchBayesianSkopt import SearchBayesianSkopt
     
     parameterSearch = SearchBayesianSkopt(recommender_class,
                                           evaluator_validation=evaluator_validation,
@@ -25,8 +29,6 @@ def hyperparams_tuning(recommender_class, URM_train, URM_validation, URM_test):
     
     # Step 3: Define parameters range   
     print("Parameters range ...") 
-    from skopt.space import Real, Integer, Categorical
-    from utils.ParameterTuning.SearchAbstractClass import SearchInputRecommenderArgs
 
     # n_cases = 8 
     # n_random_starts =  int(n_cases / 3) # 5
