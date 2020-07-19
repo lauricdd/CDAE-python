@@ -42,24 +42,35 @@ def download_dataset_from_kaggle(dataset_name, DATASET_SUBFOLDER):
     '''
     # list datasets
     # kaggle datasets list 
-    
-    if(dataset_name == "netflix_prize"):
-        print("\n")
-        print("="*100)
-        print("netflix-prize dataset files\n")
-        os.system("kaggle datasets files lauraschiatti/netflix-prize")
 
+    print("\n")
+    print("="*100)
+
+    if dataset_name == "netflix_prize":
+        
+        print("netflix-prize dataset files ... \n")
+        dataset = "lauraschiatti/netflix-prize"
         data_files = ["ratings.csv"]#["netflix_prize.txt"] 
-        for filename in data_files:
-            command =  "kaggle datasets download -f " + str(filename)+ " -p ../data/netflix_prize --unzip lauraschiatti/netflix-prize"
-            os.system(command)
 
-        # --unzip not working. Unzip data files manually
-        unzip_all(DATASET_SUBFOLDER)  
+    elif dataset_name == "yelp":
+        
+        print("yelp dataset files ... \n")
+        dataset = "lauraschiatti/yelp-academic-dataset-review"
+        data_files = ["yelp_ratings.txt"]
+        
+    os.system("kaggle datasets files " + str(dataset))
 
-        print("="*100, "\n")
+    for filename in data_files:
+        command =  "kaggle datasets download -f " + str(filename) + " -p " + str(DATASET_SUBFOLDER) + " --unzip " + str(dataset)
+        os.system(command)
 
-        return DATASET_SUBFOLDER + data_files[0]
+
+    # --unzip not working. Unzip data files manually
+    unzip_all(DATASET_SUBFOLDER)  
+
+    print("="*100, "\n")
+
+    return DATASET_SUBFOLDER + data_files[0]
 
 
 def unzip_all(DATASET_SUBFOLDER):
@@ -146,17 +157,27 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # load the dataset
         filepath = download_dataset_from_kaggle("netflix_prize", DATASET_SUBFOLDER)
         
-        #["netflix_prize.txt"] 
+        #["netflix_prize.txt"] ENTIRE DATASET
         # format: Cust_Id,Movie_Id,rating,timestamp
         # # keep_col = ['Cust_Id','Movie_Id','Rating']
         # ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
         # ratings_df.rename(columns={'Cust_Id': 'user_id', 'Movie_Id': 'movie_id', 'Rating': 'rating'}, inplace=True)
 
-        # ["ratings.csv"]
+        # ["ratings.csv"] REDUCED DATASET
         # format: userId,movieId,rating,timestamp
         keep_col = ['userId','movieId','rating']
         ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
         ratings_df.rename(columns={'userId': 'user_id', 'movieId': 'movie_id'}, inplace=True)
+
+    elif data_name == "yelp":
+        
+        # load the dataset
+        filepath = download_dataset_from_kaggle("yelp", DATASET_SUBFOLDER)
+
+        # format: Cust_Id,Movie_Id,rating,timestamp
+        keep_col = ['user_id','business_id','stars']
+        ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
+        ratings_df.rename(columns={'business_id': 'movie_id', 'stars': 'rating'}, inplace=True)
 
     # data exploration (summary statitics) before preprocessing
     print("{} statistics BEFORE preprocessing ... ".format(data_name))

@@ -153,8 +153,7 @@ elif data_name == 'politic_old': # Politic2013
     num_items = 7162
     num_total_ratings = 2779703
 
-
-elif data_name == 'movielens_10m' or data_name == 'netflix_prize': 
+elif data_name == 'movielens_10m' or data_name == 'netflix_prize' or data_name == "yelp": 
 
     if data_name == 'movielens_10m':
         ''' 
@@ -177,6 +176,16 @@ elif data_name == 'movielens_10m' or data_name == 'netflix_prize':
         DATASET_FILE_NAME = None
         DATASET_UNZIPPED_FOLDER = None
     
+    elif data_name == 'yelp': 
+        '''
+            load data from yelp dataset using kaggle
+        '''
+
+        DATASET_URL = None
+        DATASET_SUBFOLDER = "../data/yelp/"
+        DATASET_FILE_NAME = None
+        DATASET_UNZIPPED_FOLDER = None
+
     if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
         ratings_df = prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER)
     else: 
@@ -333,6 +342,7 @@ with tf.compat.v1.Session() as sess:
 
     # Sparse LInear Method: Machine learning approach to Item-based CF
     elif model_name == "SLIMElasticNet":     
+        
         # holdout data
         if  args.splitting_method == "random_global":
             print("Splitting dataset with 20% test data using split_train_in_two_percentage_global_sample... ")
