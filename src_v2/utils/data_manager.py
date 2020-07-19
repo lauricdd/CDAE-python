@@ -187,7 +187,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
 def rename_columns(final_ratings_df):
     '''
     '''
-    
+
     user_column_id = 'user_id'
     movie_column_id = 'movie_id'
 
