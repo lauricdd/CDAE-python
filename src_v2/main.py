@@ -330,11 +330,14 @@ with tf.compat.v1.Session() as sess:
         
         # Holdout data: 
         print("Splitting dataset with 20% test data... ")
-        URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
-        URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
-        
-        # for each user, randomly hold 20% of the ratings in the test set
+        # URM_train, URM_test = split_train_validation_random_holdout(R, train_split=0.8) # URM_all
+        # URM_train, URM_validation = split_train_validation_random_holdout(URM_train, train_split=0.9)
 
+        
+        URM_train, URM_test = split_train_in_two_percentage_user_wise(R, train_split=0.8) # URM_all
+        URM_train, URM_validation = split_train_in_two_percentage_user_wise(URM_train, train_split=0.9)
+
+        # for each user, randomly hold 20% of the ratings in the test set
 
         # SLIM model
         SLIMElasticNet = SLIMElasticNetRecommender(URM_train)
