@@ -172,15 +172,15 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         print(ratings_df)
         print("="*100)
 
-        # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
-        final_ratings_df = rescale_ids(ratings_df)        
-
         if data_name == "movielens_10m":
+            # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
+            final_ratings_df = rescale_ids(ratings_df)        
+
             # check correpondence between original and new ids 
             test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
 
-        # final cols renaming
-        final_ratings_df = rename_columns(final_ratings_df)
+            # final cols renaming
+            final_ratings_df = rename_columns(final_ratings_df)
 
         # save new formatted file
         final_ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False, 
