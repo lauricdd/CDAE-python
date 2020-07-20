@@ -31,7 +31,7 @@ parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
 parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize', 'yelp'], 
-                        default='yelp')
+                        default='netflix_prize')
 
 
 ######################################################################

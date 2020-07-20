@@ -193,18 +193,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         print(final_ratings_df)
         print("="*100)
 
-        if data_name == "movielens_10m":
-            
-            # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
-            final_ratings_df = rescale_ids(final_ratings_df)        
-
-            # check correpondence between original and new ids 
-            test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
-
-            # final cols renaming
-            final_ratings_df = rename_columns(final_ratings_df, "NEW_")
-
-        elif data_name == "yelp":
+        if data_name == "yelp":
             
             # create unique hash from string IDs
             final_ratings_df = hash_ids(final_ratings_df) 
@@ -212,11 +201,44 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
             # final cols renaming
             final_ratings_df = rename_columns(final_ratings_df,  "HASHED_")
 
-            # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
-            final_ratings_df = rescale_ids(final_ratings_df)        
+        
+        # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
+        final_ratings_df = rescale_ids(final_ratings_df)        
 
-            # final cols renaming
-            final_ratings_df = rename_columns(final_ratings_df, "NEW_")
+        if data_name == "movielens_10m":
+            # check correpondence between original and new ids 
+            test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
+
+        # final cols renaming
+        final_ratings_df = rename_columns(final_ratings_df, "NEW_")
+
+
+
+        
+        # if data_name == "movielens_10m":
+            
+        #     # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
+        #     final_ratings_df = rescale_ids(final_ratings_df)        
+
+        #     # check correpondence between original and new ids 
+        #     test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
+
+        #     # final cols renaming
+        #     final_ratings_df = rename_columns(final_ratings_df, "NEW_")
+
+        # elif data_name == "yelp":
+            
+        #     # create unique hash from string IDs
+        #     final_ratings_df = hash_ids(final_ratings_df) 
+
+        #     # final cols renaming
+        #     final_ratings_df = rename_columns(final_ratings_df,  "HASHED_")
+
+        #     # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
+        #     final_ratings_df = rescale_ids(final_ratings_df)        
+
+        #     # final cols renaming
+        #     final_ratings_df = rename_columns(final_ratings_df, "NEW_")
 
 
         # save new formatted file
@@ -226,11 +248,10 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # remove explicit dataset file
         remove_file(filepath)
 
-    if data_name == "movielens_10m": # TODO: if model_name == 'CDAE'
-        # if any test or train fold exists skip
-        if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
-            # ratings five-fold splitting
-            k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
+    # if any test or train fold exists skip
+    if not os.path.exists(DATASET_SUBFOLDER + 'Train_ratings_fold_1'):
+        # ratings five-fold splitting
+        k_fold_splitting(DATASET_SUBFOLDER, implicit_data_file)
 
     return final_ratings_df    
 
