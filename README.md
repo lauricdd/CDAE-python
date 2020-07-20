@@ -50,7 +50,7 @@ Copy kaggle.json into the folder where the API expects to find it.
     chmod 600 ~/.kaggle/kaggle.json
     ls ~/.kaggle
 
-Check files of the netflix prize dataset available in kaggle  (netflix-inc/netflix-prize-data)
+Check files of the netflix prize dataset available in kaggle  (after installing kaggle package)
 
     kaggle datasets files netflix-inc/netflix-prize-data
     
