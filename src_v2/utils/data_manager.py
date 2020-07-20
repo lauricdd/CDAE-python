@@ -174,7 +174,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         # load the dataset
         filepath = download_dataset_from_kaggle("yelp", DATASET_SUBFOLDER)
 
-        # format: Cust_Id,Movie_Id,rating,timestamp
+        # format: user_id,business_id,stars,date
         keep_col = ['user_id','business_id','stars']
         ratings_df = pd.read_csv(filepath, index_col=False, usecols=keep_col)[keep_col]
         ratings_df.rename(columns={'business_id': 'movie_id', 'stars': 'rating'}, inplace=True)
@@ -194,6 +194,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         print("="*100)
 
         if data_name == "movielens_10m":
+            
             # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
             final_ratings_df = rescale_ids(ratings_df)        
 
@@ -201,7 +202,15 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
             test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
 
             # final cols renaming
-            final_ratings_df = rename_columns(final_ratings_df)
+            final_ratings_df = rename_columns(final_ratings_df, "NEW_")
+
+        elif data_name == "yelp":
+            
+            # create unique hash from string IDs
+            final_ratings_df = hash_ids(ratings_df) 
+
+            # final cols renaming
+            final_ratings_df = rename_columns(final_ratings_df,  "HASHED_")
 
         # save new formatted file
         final_ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False, 
@@ -219,25 +228,29 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
     return final_ratings_df    
 
 
-def rename_columns(final_ratings_df):
+def rename_columns(final_ratings_df, prefix):
     '''
     '''
 
     user_column_id = 'user_id'
     movie_column_id = 'movie_id'
 
-    if "NEW_user_id" in final_ratings_df.columns:
-        user_column_id = 'NEW_user_id'
+    new_user_column_id = prefix + user_column_id
+    print("new_user_column_id", new_user_column_id)
+    new_movie_column_id = prefix + movie_column_id
+
+    if new_user_column_id in final_ratings_df.columns:
+        user_column_id = new_user_column_id
     
-    if "NEW_movie_id" in final_ratings_df.columns:
-        movie_column_id = 'NEW_movie_id'
+    if new_movie_column_id in final_ratings_df.columns:
+        movie_column_id = new_movie_column_id
 
     final_ratings_df = final_ratings_df[[user_column_id, movie_column_id, 'rating']] 
-    print("final_ratings_df BEFORE renaming NEW_user_id and NEW_movie_id ... \n", final_ratings_df)
+    print("final_ratings_df BEFORE renaming {} and {} ... \n {}".format(new_user_column_id, movie_column_id, final_ratings_df))
     print("="*100)
 
     final_ratings_df.columns = ['user_id', 'movie_id', 'rating'] 
-    print("final_ratings_df AFTER renaming NEW_user_id and NEW_movie_id ... \n", final_ratings_df)
+    print("final_ratings_df AFTER renaming {} and {} ... \n {}".format(new_user_column_id, movie_column_id, final_ratings_df))
     print("="*100)
 
     return final_ratings_df
@@ -377,10 +390,44 @@ def test_movielens_10m_rescaling(untouched_ratings_df, final_ratings_df):
 
 
 
+### HASHING ###
+
+def hash_ids(ratings_df): 
+    ''' 
+        Generate ID from string in Python for user_id and movie_id columns 
+    '''
+    ratings_df = gen_new_hash(ratings_df, "user_id")
+    print("ratings_df with HASHED_user_id ... \n", ratings_df)
+    print("="*100)
+
+    final_ratings_df = gen_new_hash(ratings_df, "movie_id")
+    print("ratings_df with HASHED_movie_id ... \n", final_ratings_df)
+    print("="*100)
+
+    return final_ratings_df
+
+
+def gen_new_hash(ratings_df, id_name):
+    ''' 
+        Use the built-in hash function. 
+        Then, chop-off the last eight digits using modulo operations or string 
+        slicing operations on the integer form of the hash 
+    '''
+
+    ids = ratings_df[id_name]
+    int_ids = [abs(hash(id)) % (10 ** 8) for id in ids]
+
+    new_id = 'HASHED_' + id_name
+    ratings_df[new_id] = int_ids #ratings_df[id_name].map(hash)
+    print(ratings_df)
+
+    return ratings_df
+
+
 ### LOADING / STATISTICS ###
     
 def load_data(DATASET_SUBFOLDER):
-    '''load implicit dataset in a pandas dataframe '''
+    ''' load implicit dataset in a pandas dataframe '''
     ratings_df = pd.read_csv(DATASET_SUBFOLDER + "ratings_implicit.txt", delimiter="\t", header=None,
             names=['user_id', 'movie_id', 'rating'])
 
