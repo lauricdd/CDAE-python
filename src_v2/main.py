@@ -194,7 +194,6 @@ elif data_name == 'movielens_10m' or data_name == 'netflix_prize' or data_name =
     # data exploration (summary statitics) 
     print("{} statistics AFTER preprocessing ... ".format(data_name))
     num_users, num_items, num_total_ratings = dataset_statistics(data_name, ratings_df)
-    exit(0)
 
 else:
     raise NotImplementedError("ERROR")
@@ -212,7 +211,6 @@ result_path = '../results/' + data_name + '/' + model_name + '/' + str(test_fold
 R, mask_R, C, train_R, train_mask_R, test_R, test_mask_R, num_train_ratings, num_test_ratings,\
 user_train_set, item_train_set, user_test_set, item_test_set \
     = read_rating(path, data_name, num_users, num_items, num_total_ratings, a, b, test_fold, random_seed)
-
 
 ######################################################################
 

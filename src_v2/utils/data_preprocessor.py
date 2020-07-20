@@ -87,7 +87,7 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
 
                 num_test_ratings = num_test_ratings + 1
 
-    elif data_name == 'netflix_prize': # TODO: remove this when k_fold splitting is actually done with netflix_prize
+    elif data_name == 'netflix_prize' or data_name == 'yelp': # TODO: remove this when k_fold splitting is actually done with netflix_prize
         num_train_ratings = num_total_ratings
         num_test_ratings = num_total_ratings
 
