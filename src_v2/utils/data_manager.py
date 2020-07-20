@@ -212,6 +212,13 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
             # final cols renaming
             final_ratings_df = rename_columns(final_ratings_df,  "HASHED_")
 
+            # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
+            final_ratings_df = rescale_ids(final_ratings_df)        
+
+            # final cols renaming
+            final_ratings_df = rename_columns(final_ratings_df, "NEW_")
+
+
         # save new formatted file
         final_ratings_df.to_csv(DATASET_SUBFOLDER + implicit_data_file, index=False, 
                 header=None, sep="\t") # use \t as separator as in politic_old and politic_new
@@ -428,6 +435,7 @@ def gen_new_hash(ratings_df, id_name):
     
 def load_data(DATASET_SUBFOLDER):
     ''' load implicit dataset in a pandas dataframe '''
+    print("loading data {} ... ".format(DATASET_SUBFOLDER))
     ratings_df = pd.read_csv(DATASET_SUBFOLDER + "ratings_implicit.txt", delimiter="\t", header=None,
             names=['user_id', 'movie_id', 'rating'])
 
