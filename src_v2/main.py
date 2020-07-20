@@ -191,7 +191,6 @@ elif data_name == 'movielens_10m' or data_name == 'netflix_prize' or data_name =
     else: 
         ratings_df = load_data(DATASET_SUBFOLDER)
 
-        
     # data exploration (summary statitics) 
     print("{} statistics AFTER preprocessing ... ".format(data_name))
     num_users, num_items, num_total_ratings = dataset_statistics(data_name, ratings_df)
