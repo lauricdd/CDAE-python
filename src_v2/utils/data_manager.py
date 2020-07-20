@@ -196,7 +196,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         if data_name == "movielens_10m":
             
             # rescale user IDs to successive one ranged IDs (no need to rescale movie IDs)
-            final_ratings_df = rescale_ids(ratings_df)        
+            final_ratings_df = rescale_ids(final_ratings_df)        
 
             # check correpondence between original and new ids 
             test_movielens_10m_rescaling(ratings_df, final_ratings_df) 
@@ -207,7 +207,7 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         elif data_name == "yelp":
             
             # create unique hash from string IDs
-            final_ratings_df = hash_ids(ratings_df) 
+            final_ratings_df = hash_ids(final_ratings_df) 
 
             # final cols renaming
             final_ratings_df = rename_columns(final_ratings_df,  "HASHED_")

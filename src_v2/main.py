@@ -186,10 +186,14 @@ elif data_name == 'movielens_10m' or data_name == 'netflix_prize' or data_name =
         DATASET_FILE_NAME = None
         DATASET_UNZIPPED_FOLDER = None
 
+    print("Entró")
     if not os.path.isdir(DATASET_SUBFOLDER): # run just first time
         ratings_df = prepare_data(data_name, DATASET_URL, DATASET_SUBFOLDER, DATASET_FILE_NAME, DATASET_UNZIPPED_FOLDER)
+        print("prepare_data")
     else: 
+        print("load_data")
         ratings_df = load_data(DATASET_SUBFOLDER)
+
 
     # data exploration (summary statitics) 
     print("{} statistics AFTER preprocessing ... ".format(data_name))
