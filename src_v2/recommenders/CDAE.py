@@ -139,7 +139,8 @@ class CDAE():
         elif self.optimizer_method == "Adadelta":
             optimizer = tf.compat.v1.train.AdadeltaOptimizer(self.lr)
         elif self.optimizer_method == "Adagrad":
-            optimizer = tf.compat.v1.train.AdadeltaOptimizer(self.lr)
+            # optimizer = tf.compat.v1.train.AdadeltaOptimizer(self.lr)
+            optimizer = tf.compat.v1.train.AdagradOptimizer(self.lr)
         elif self.optimizer_method == "RMSProp":
             optimizer = tf.compat.v1.train.RMSPropOptimizer(self.lr)
         elif self.optimizer_method == "GradientDescent":
