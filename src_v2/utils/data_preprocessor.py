@@ -24,7 +24,7 @@ def read_rating(path,data_name, num_users, num_items, num_total_ratings, a, b, t
     test_mask_R = np.zeros((num_users, num_items))
 
     if data_name == 'politic_new' or data_name == 'politic_old' \
-        or data_name == 'movielens_10m' or data_name == 'netflix_prize' or data_name == 'yelp':
+        or data_name == 'movielens_100k' or data_name == 'movielens_10m' or data_name == 'netflix_prize' or data_name == 'yelp':
 
         num_train_ratings = 0
         num_test_ratings = 0

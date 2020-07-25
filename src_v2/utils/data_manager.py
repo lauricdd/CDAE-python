@@ -127,7 +127,31 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
     # :return: ratings_df
     '''
 
-    if data_name == "movielens_10m":
+    if data_name == "movielens_100k":
+        try:
+            data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
+        
+        except(FileNotFoundError, zipfile.BadZipFile):
+            print("Unable to find data zip file. Downloading...")
+            download_from_URL(URL=DATASET_URL, folder_path=DATASET_SUBFOLDER, file_name=DATASET_FILE_NAME)
+            
+            data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file
+        
+        filepath = data_file.extract(DATASET_UNZIPPED_FOLDER + "u.data", 
+                                        path=DATASET_SUBFOLDER)  # extract data      
+
+        # load the dataset
+        # format: user_id::movie_id::rating::timestamp
+        cols = ['user_id', 'movie_id', 'rating', 'timestamp']
+        ratings_df = pd.read_csv(filepath, delimiter='\t', header=None, 
+                names=cols, usecols=cols[0:3], # do not consider timestamp 
+                engine='python')
+
+        # remove zip file 
+        filepath = DATASET_SUBFOLDER + DATASET_FILE_NAME
+        # remove_file(filepath)
+
+    elif data_name == "movielens_10m":
 
         try:
             data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file

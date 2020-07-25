@@ -30,8 +30,8 @@ parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default=
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_10m', 'netflix_prize', 'yelp'], 
-                        default='netflix_prize')
+parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_100k', 'movielens_10m', 'netflix_prize', 'yelp'], 
+                        default='movielens_100k')
 
 
 ######################################################################
@@ -59,7 +59,8 @@ parser.add_argument('--optimizer_method', choices=['Adam','Adadelta','Adagrad','
 parser.add_argument('--keep_prob', type=float, default=1.0) 
 
 # gradient clipping: prevent exploding gradients
-parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')
+# parser.add_argument('--grad_clip', choices=['True', 'False'], default='True')
+parser.add_argument('--grad_clip', choices=['True', 'False'], default='False')
 
 # normalize activations of the previous layer at each batch
 parser.add_argument('--batch_normalization', choices=['True','False'], default = 'False')
@@ -90,7 +91,7 @@ parser.add_argument('--encoder_method', choices=['SDAE','VAE'], default='SDAE')
 # SLIM parameters
 ######################################################################
 
-parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='False')
+parser.add_argument('--apply_hyperparams_tuning', choices=['True','False'], default='True')
 
 parser.add_argument('--splitting_method', choices=['random_global','random_user_wise'], default='random_user_wise')
 
@@ -153,9 +154,21 @@ elif data_name == 'politic_old': # Politic2013
     num_items = 7162
     num_total_ratings = 2779703
 
-elif data_name == 'movielens_10m' or data_name == 'netflix_prize' or data_name == "yelp": 
+elif data_name == 'movielens_100k' or data_name == 'movielens_10m' \
+        or data_name == 'netflix_prize' or data_name == "yelp": 
 
-    if data_name == 'movielens_10m':
+    if data_name == 'movielens_100k':
+        ''' 
+            load data from MovieLens 100K Dataset
+            http://grouplens.org/datasets/movielens/ 
+        '''
+
+        DATASET_URL = "http://files.grouplens.org/datasets/movielens/ml-100k.zip"
+        DATASET_SUBFOLDER = "../data/movielens_100k/"
+        DATASET_FILE_NAME = "ml-100k.zip"  
+        DATASET_UNZIPPED_FOLDER = "ml-100k/" 
+
+    elif data_name == 'movielens_10m':
         ''' 
             load data from MovieLens 10M Dataset
             http://grouplens.org/datasets/movielens/ 
@@ -259,7 +272,8 @@ def csr_sparse_matrix(data, row, col, shape=None):
     return csr_matrix
  
 
- ######################################################################
+##################################################################################################
+
 
 
 # Launch the evaluation graph in a session 
@@ -320,12 +334,10 @@ with tf.compat.v1.Session() as sess:
         pre_b = dict()
         
         for itr in range(n_layer - 1):
-            initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, itr, "sigmoid")
+            initial_DAE = DAE(layer_structure[itr], layer_structure[itr + 1], num_items, itr, "linear") #, "sigmoid")
 
             # get initial weights using do_not_pretrain
             pre_W[itr], pre_b[itr] = initial_DAE.do_not_pretrain()
-
-            # TODO: get initial weights using do_pretrain??
 
         CDAE = CDAE(sess,args,layer_structure,n_layer,pre_W,pre_b,keep_prob,batch_normalization,current_time,
                     num_users,num_items,hidden_neuron,f_act,g_act,

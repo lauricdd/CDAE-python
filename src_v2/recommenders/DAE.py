@@ -76,6 +76,8 @@ class DAE():
 
         # Define loss and optimizer, minimize the squared error
         cost = tf.reduce_mean(input_tensor=tf.pow(output - X, 2))
+
+        
         optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(cost)
         #optimizer = tf.train.AdadeltaOptimizer(learning_rate=1e-1).minimize(cost)
         #optimizer = tf.train.AdadeltaOptimizer.__init__(learning_rate=0.001, rho=0.95, epsilon=1e-08, use_locking=False, name='Adadelta')
