@@ -151,7 +151,8 @@ def prepare_data(data_name, DATASET_URL=None, DATASET_SUBFOLDER=None, DATASET_FI
         filepath = DATASET_SUBFOLDER + DATASET_FILE_NAME
         # remove_file(filepath)
 
-    elif data_name == "movielens_10m":
+    
+    elif data_name == "movielens_1m" or data_name == "movielens_10m":
 
         try:
             data_file = zipfile.ZipFile(DATASET_SUBFOLDER + DATASET_FILE_NAME)  # open zip file

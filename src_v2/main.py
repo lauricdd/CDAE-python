@@ -30,8 +30,8 @@ parser.add_argument('--model_name', choices=['CDAE', 'SLIMElasticNet'], default=
 parser.add_argument('--random_seed', type=int, default=1000)
 
 # dataset name
-parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_100k', 'movielens_10m', 'netflix_prize', 'yelp'], 
-                        default='movielens_100k')
+parser.add_argument('--data_name', choices=['politic_old', 'politic_new', 'movielens_100k', 'movielens_1m', 'movielens_10m', 
+                'netflix_prize', 'yelp'], default='movielens_1m')
 
 
 ######################################################################
@@ -154,7 +154,7 @@ elif data_name == 'politic_old': # Politic2013
     num_items = 7162
     num_total_ratings = 2779703
 
-elif data_name == 'movielens_100k' or data_name == 'movielens_10m' \
+elif data_name == 'movielens_100k' or data_name == 'movielens_1m' or data_name == 'movielens_10m' \
         or data_name == 'netflix_prize' or data_name == "yelp": 
 
     if data_name == 'movielens_100k':
@@ -167,6 +167,17 @@ elif data_name == 'movielens_100k' or data_name == 'movielens_10m' \
         DATASET_SUBFOLDER = "../data/movielens_100k/"
         DATASET_FILE_NAME = "ml-100k.zip"  
         DATASET_UNZIPPED_FOLDER = "ml-100k/" 
+
+    elif data_name == 'movielens_1m':
+        ''' 
+            load data from MovieLens 1M Dataset
+            http://grouplens.org/datasets/movielens/ 
+        '''
+
+        DATASET_URL = "http://files.grouplens.org/datasets/movielens/ml-1m.zip"
+        DATASET_SUBFOLDER = "../data/movielens_1m/"
+        DATASET_FILE_NAME = "movielens_1m.zip"  
+        DATASET_UNZIPPED_FOLDER = "ml-1m/"
 
     elif data_name == 'movielens_10m':
         ''' 
