@@ -1,0 +1,61 @@
+\section{SLIM model implementation}
+
+\subsection{Data preprocessing}
+
+There are different approaches to hyperparameter tuning, in this case \textbf{Bayesian Optimization (BO}) was used. It is an automatic approach that has proven to outperform other state of the art optimization algorithms in many problems. Bayesian optimization using Gaussian Processes (skopt). \textit{Algorithm:} gp\_minimize (skopt.gp\_minimize)
+    
+
+\begin{minted}[fontsize=\footnotesize]{shell}
+hyperparameters_range_dictionary = {
+    "l1_ratio" = Real(low=1e-5, high=1.0, prior='log-uniform')
+    "alpha" = Real(low=1e-3, high=1.0, prior='uniform')
+}
+\end{minted}
+
+Now, using a random holdout splitting on the entire dataset and then performing BO, the best parameters found are as follows
+
+\begin{minted}[fontsize=\footnotesize]{shell}
+    'movielens_10m': {
+        'topK': 533, 
+        'l1_ratio': 0.025062993365157635, 
+        'alpha': 0.18500803626703258
+    } 
+\end{minted}
+
+\subsubsection{Holdout data}
+
+The splitting of the data is very important to ensure your algorithm is evaluated in a realistic scenario by using test it has never seen. For the experiments two different splittings were tested:
+
+\begin{itemize}
+    \item Splitting the URM in two matrices selecting the number of interactions one user at a time.
+    %The function \verb|split_train_in_two_percentage_user_wise| \\ \verb|(R, train_percentage=0.8, verbose=True)| 
+    
+    \item Splitting an URM in two matrices selecting the number of interactions globally.
+    %The function \verb|split_train_in_two_percentage_global_sample| \\ \verb|(R, train_percentage=0.8, verbose=True)| 
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{SLIM Elastic NetRecommender parameters}
+The SLIM model to be trained is the the ElasticNet one provided by sklearn
+
+\begin{itemize}
+    \item sklearn.linear\_model.ElasticNet
+    \begin{minted}[fontsize=\small]{shell}
+        ElasticNet(alpha=alpha, l1_ratio=self.l1_ratio,
+                positive=self.positive_only, fit_intercept=False,
+                copy_X=False, precompute=True,
+                selection='random', max_iter=100, tol=1e-4)
+    \end{minted}
+
+    \item To control L1 and L2 penalties separately
+     \begin{minted}[fontsize=\small]{shell}
+        a * 1 + b * 2
+        alpha = a + b
+        l1_ratio = a / (a+b)
+        
+        l1_ratio = 1 => Lasso penalty
+    \end{minted}
+\end{itemize}
+\end{appendices}
